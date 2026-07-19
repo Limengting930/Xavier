@@ -247,6 +247,7 @@ function AppInner() {
           onConfirm={handleGoalConfirm}
           onCancel={() => setGoalPickerOpen(false)}
           locked={false}
+          minValue={newDone}
         />
       )}
       {/* Locked Alert */}

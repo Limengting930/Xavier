@@ -31,7 +31,11 @@ export default function TodayCard({
   ctaDisabled = false,
   hintText,
 }: Props) {
-  const pct = total > 0 ? done / total : 0
+  // 显示层截断：done 可能大于 total（用户把 goal 调小之后，历史已学的题目会超出新目标）
+  // 数据本身保留真实值不动（外部的 newFinished 判定 newDone >= goal 仍然生效），
+  // 这里只做视觉呈现，避免出现「20/10、200%」这种反直觉的显示。
+  const displayDone = total > 0 ? Math.min(done, total) : done
+  const pct = total > 0 ? displayDone / total : 0
   const pctText = Math.round(pct * 100)
 
   // 兔子气泡：点击一次 tick+1 → SpeechBubble 显示 3s
@@ -59,9 +63,9 @@ export default function TodayCard({
           <span>今日学习目标</span>
         </div>
 
-        {/* 数字 */}
+        {/* 数字（done 截断到 total，避免调小 goal 后出现 20/10 这种超标显示） */}
         <div className="today-card-nums">
-          <span className="today-card-done">{done}</span>
+          <span className="today-card-done">{displayDone}</span>
           <span className="today-card-sep"> / </span>
           <span className="today-card-total">{total}</span>
           <span className="today-card-unit"> 题</span>

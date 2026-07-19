@@ -154,10 +154,8 @@ export default function AIChatBot({ currentCard, messages, onMessagesChange }: P
     if (open) requestAnimationFrame(() => scrollToBottom('auto'))
   }, [open, scrollToBottom])
 
-  // 打开面板时自动聚焦输入框
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 120)
-  }, [open])
+  // 注意：不在打开面板时自动聚焦输入框，避免首次进入即弹出软键盘（移动端体验）
+
 
   // 组件卸载时中断请求
   useEffect(() => () => abortRef.current?.abort(), [])

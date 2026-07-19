@@ -2371,3 +2371,10 @@
 }
 .aichat-send:active { transform: scale(.9); }
 .aichat-send:disabled { opacity: .4; box-shadow: none; cursor: default; }
+
+/* GoalPicker: 禁选项 + 禁用主按钮（用于目标不能改小的场景） */
+.goal-picker-item.disabled { opacity: .28; cursor: not-allowed; }
+.goal-picker-item.disabled .goal-num,
+.goal-picker-item.disabled .goal-unit { color: var(--sub); }
+.goal-btn.primary:disabled { opacity: .4; cursor: not-allowed; }
+.goal-btn.primary:disabled:active { background: var(--accent); }
