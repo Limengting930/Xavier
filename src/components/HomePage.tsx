@@ -62,11 +62,14 @@ export default function HomePage({
   const newFinished = goal > 0 && newDone >= goal
   const remainingReview = Math.max(0, reviewTotal - reviewDone)
 
-  // 连续打卡
+  // 连续打卡（按本地日期回溯，与 store.computeStreak 口径一致）
   const streak = useMemo(() => {
     let s = 0
+    const base = new Date()
+    base.setHours(0, 0, 0, 0)
     for (let i = 0; i < 365; i++) {
-      const k = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10)
+      const d = new Date(base.getTime() - i * 86400000)
+      const k = d.toLocaleDateString('sv-SE')
       if (store.daily[k]?.studied > 0) s++
       else if (i > 0) break
     }

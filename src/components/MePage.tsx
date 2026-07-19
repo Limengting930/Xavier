@@ -105,7 +105,9 @@ export default function MePage({ user, goal }: Props) {
   const calendarDays = useMemo(() => {
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
-    const todayStr = new Date().toISOString().slice(0, 10)
+    // 日历里所有日期都是"当地"含义，dateStr 必须用本地日期格式化，才能和 daily 的
+    // 本地日期 key 对上；旧代码用 toISOString 会在北京时区把当天算成前一天，导致高亮错位。
+    const todayStr = new Date().toLocaleDateString('sv-SE')
 
     const firstDay = new Date(year, month, 1)
     const lastDay = new Date(year, month + 1, 0)
@@ -121,7 +123,7 @@ export default function MePage({ user, goal }: Props) {
     const days = []
     const d = new Date(startDate)
     while (d <= endDate) {
-      const dateStr = d.toISOString().slice(0, 10)
+      const dateStr = d.toLocaleDateString('sv-SE')
       // 当天有任何评分（新学 or 复习）都视为"进行了学习"，与 RATE_CARD 写入 daily.ids 的口径一致
       const hasStudied = (store.daily[dateStr]?.ids?.length || 0) > 0
       days.push({

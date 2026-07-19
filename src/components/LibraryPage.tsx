@@ -132,11 +132,15 @@ export default function LibraryPage({ onPreviewCard }: Props) {
           filtered.map(c => {
             const s = getCardState(c.id)
             const sl = statusLabel(s)
-            const nextStr = s?.nextReview
-              ? s.nextReview <= Date.now()
-                ? '待复习'
-                : `${Math.ceil((s.nextReview - Date.now()) / 86400000)}天后`
-              : ''
+            // 到期口径与全站一致：nextReview 的本地日期 <= 今天 → 待复习
+            // 否则显示"N 天后"（按自然日差算，用 setHours(0,0,0,0) 归零两侧到当天起点）
+            let nextStr = ''
+            if (s?.nextReview) {
+              const today0 = new Date(); today0.setHours(0, 0, 0, 0)
+              const next0 = new Date(s.nextReview); next0.setHours(0, 0, 0, 0)
+              const diffDays = Math.round((next0.getTime() - today0.getTime()) / 86400000)
+              nextStr = diffDays <= 0 ? '待复习' : `${diffDays}天后`
+            }
             const isFav = !!s?.fav
             return (
               <div key={c.id} className="lib-item" onClick={() => onPreviewCard(c.id, filtered.map(x => x.id))}>

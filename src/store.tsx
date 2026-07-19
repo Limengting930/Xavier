@@ -47,13 +47,36 @@ export function srsUpdate(cardId: number, quality: number, cards: Record<string,
 // ══════════════════════════════════════════════════
 // Helpers
 // ══════════════════════════════════════════════════
-export function today(): string { return new Date().toISOString().slice(0, 10) }
+// 全站统一使用本地日期字符串（YYYY-MM-DD）作为 daily 的 key、到期判断、连击回溯的基准。
+// 之前用 toISOString().slice(0,10) 取 UTC 日期，会导致北京时间 0:00-8:00 之间
+// 日期串还停留在昨天，引发一系列问题：
+//   1. 昨天学的新题（nextReview = 昨天 + 24h = 今天）在今天上午仍不算"到期"，ReviewCard 显示 0
+//   2. daily key 归属错位（凌晨评分的题被记到昨天）
+//   3. 连击算法与日历高亮"今天"会晃动一天
+// sv-SE locale 输出格式恰好是 YYYY-MM-DD，是常用取本地日期字符串的 trick。
+export function todayLocal(): string {
+  return new Date().toLocaleDateString('sv-SE')
+}
+// 从任意时间戳算它的本地日期串
+export function dateKeyLocal(ts: number): string {
+  return new Date(ts).toLocaleDateString('sv-SE')
+}
+// 复习到期判断：卡片的 nextReview「本地日期」<= 今天本地日期 就算到期。
+// 例：昨天 22:00 学的卡 nextReview = 今天 22:00，本地日期是今天 → 今天 0:00 一过就算到期。
+export function isDueByLocalDate(nextReview: number, todayStr: string = todayLocal()): boolean {
+  return dateKeyLocal(nextReview) <= todayStr
+}
+// 兼容保留 today() 别名，避免旧引用一次性全改；语义已切换为本地日期
+export function today(): string { return todayLocal() }
 
-// 连续学习天数：从今天往回数，daily[k].ids 有内容视为学过；首日就没内容 streak = 0
+// 连续学习天数：从今天往回按「本地日期」数，daily[k].ids 有内容视为学过；首日就没内容 streak = 0
 export function computeStreak(daily: Record<string, DayRecord>): number {
   let s = 0
+  const base = new Date()
+  base.setHours(0, 0, 0, 0)
   for (let i = 0; i < 365; i++) {
-    const k = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10)
+    const d = new Date(base.getTime() - i * 86400000)
+    const k = d.toLocaleDateString('sv-SE')
     const rec = daily[k]
     if (rec && (rec.ids?.length || 0) > 0) s++
     else if (i > 0) break
@@ -82,10 +105,11 @@ export function checkAchievements(
   const t = today()
   const todayIds = store.daily[t]?.ids || []
   // 今日"新题"完成数：与 getTodayProgress 口径一致——排除掉今天到期复习的部分
+  // 到期判断改「本地日期口径」：昨天学的卡今天就算到期，不用等满 24 小时
   const dueIds = new Set<number>()
   libIds.forEach(id => {
     const c = store.cards[id]
-    if (c && c.reviewCount > 0 && c.nextReview <= now) dueIds.add(id)
+    if (c && c.reviewCount > 0 && isDueByLocalDate(c.nextReview, t)) dueIds.add(id)
   })
   const newDoneToday = todayIds.filter(id => libIds.has(id) && !dueIds.has(id)).length
 
@@ -117,13 +141,13 @@ export function getAchievementProgress(
   goal: number,
   libIds: Set<number>,
 ): { current: number; target: number; unit: string } {
-  const now = Date.now()
   const t = today()
   const todayIds = store.daily[t]?.ids || []
+  // 到期判断改「本地日期口径」，与 checkAchievements / getTodayProgress 保持一致
   const dueIds = new Set<number>()
   libIds.forEach(cardId => {
     const c = store.cards[cardId]
-    if (c && c.reviewCount > 0 && c.nextReview <= now) dueIds.add(cardId)
+    if (c && c.reviewCount > 0 && isDueByLocalDate(c.nextReview, t)) dueIds.add(cardId)
   })
   const newDoneToday = todayIds.filter(cardId => libIds.has(cardId) && !dueIds.has(cardId)).length
   const streak = computeStreak(store.daily)
@@ -152,12 +176,13 @@ export function loadLocal(): Store {
       achievements: d.achievements || {},
     }
     // migration: old daily without ids
+    // 从 cards.lastReview 反推每天学过哪些题；用本地日期，与新口径保持一致
     const needsMigration = Object.values(store.daily).some(v => !v.ids)
     if (needsMigration) {
       const dayIds: Record<string, number[]> = {}
       Object.entries(store.cards).forEach(([id, s]) => {
         if (s.lastReview) {
-          const k = new Date(s.lastReview).toISOString().slice(0, 10)
+          const k = dateKeyLocal(s.lastReview)
           if (!dayIds[k]) dayIds[k] = []
           if (!dayIds[k].includes(Number(id))) dayIds[k].push(Number(id))
         }
@@ -234,11 +259,11 @@ function reducer(state: AppState, action: Action): AppState {
       // 关键：在 srsUpdate 之前，先根据「评分前」的 CardState 判定这次是不是复习到期卡。
       // 判定条件跟 buildQueue('review-due') / getDueSnapshotIds 保持一致：
       //   reviewCount > 0（排除首次学习的新题、和只收藏未评分的卡）
-      //   nextReview <= now（到期）
+      //   nextReview 的本地日期 <= 今天（自然日到期口径，跨过 0 点即算到期）
       // 之所以要在这里持久化，是因为 srsUpdate 之后 nextReview 会被推到未来，
       // 之后任何时候再看这张卡都没法判断"评分前是不是到期"了。
       const prevCard = state.store.cards[action.cardId]
-      const wasReviewDue = !!prevCard && prevCard.reviewCount > 0 && prevCard.nextReview <= Date.now()
+      const wasReviewDue = !!prevCard && prevCard.reviewCount > 0 && isDueByLocalDate(prevCard.nextReview)
 
       const newCardState = srsUpdate(action.cardId, action.quality, cards)
       cards[action.cardId] = newCardState
@@ -369,7 +394,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const isDue = useCallback((id: number) => {
     const s = getCardState(id)
-    return s ? s.nextReview <= Date.now() : false
+    return s ? isDueByLocalDate(s.nextReview) : false
   }, [getCardState])
 
   const isWeak = useCallback((id: number) => {
@@ -402,22 +427,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // 「今日到期复习题」集合：只增不减的「棘轮」。
-  // 为什么不能用"当天首次访问时算一次就固定住"的快照：nextReview 是精确的时间戳，不是按自然日跳变的——
-  // 比如昨天 20:00 学的卡，今天 09:00 打开 App 时还没到期，若这时候算一次就锁死，
-  // 那到了今天 20:00 卡真正到期时也不会再被发现了。所以这里改成：每次调用都用当前时间重新扫一遍
-  // 「现在到期」的卡，并入集合（只加不删）；已经评分完成、nextReview 被推到未来的卡依然留在集合里，
-  // 保证分母（reviewTotal）不会因为复习完成而变小，也不会因为当天早些时候查过一次就再也发现不了新到期的卡。
-  // reviewCount > 0 用于排除「只收藏过、从未评分」的卡片（其 nextReview 默认 0，恒 <= now）。
+  // 到期口径：本地日期 <= 今天本地日期（自然日口径，跨过 0 点即到期），
+  // 与 buildQueue('review-due') / RATE_CARD 的 wasReviewDue / checkAchievements 全站保持一致。
+  // 之所以还需要 snapshot（只加不删）：卡片评分后 nextReview 会被推到未来，若下次扫描
+  // 时就直接消失，分母（reviewTotal）会变小，进度条会诡异回退。所以已发现的到期卡永久留在集合里。
+  // reviewCount > 0 用于排除「只收藏过、从未评分」的卡片（其 nextReview 默认 0，恒到期）。
+  // 跨自然日时（date 变化）snapshot 清空重建：昨天已到期今天未评的卡会自动再次进入集合。
   const dueSnapshotRef = useRef<{ date: string; ids: Set<number> }>({ date: '', ids: new Set() })
   const getDueSnapshotIds = useCallback((): Set<number> => {
     const t = today()
     if (dueSnapshotRef.current.date !== t) {
       dueSnapshotRef.current = { date: t, ids: new Set() }
     }
-    const now = Date.now()
     allCards().forEach(c => {
       const s = stateRef.current.store.cards[c.id]
-      if (s && s.reviewCount > 0 && s.nextReview <= now) {
+      if (s && s.reviewCount > 0 && isDueByLocalDate(s.nextReview, t)) {
         dueSnapshotRef.current.ids.add(c.id)
       }
     })
@@ -426,13 +450,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // 今日「复习 / 新题」完成情况总览：首页两张学习入口卡片 + 新题学习流程解锁判断都复用这里
   //
-  // 分子（reviewDone）改成从持久化字段 `daily[t].reviewIds` 直接读——这是「评分那一瞬间」
+  // 分子（reviewDone）从持久化字段 `daily[t].reviewIds` 直接读——这是「评分那一瞬间」
   // 用「评分前」的 CardState 判定并写入 daily 的，不依赖 snapshot 的时序，能保证跨越
   // 进入 LearnPage → 评分 → 返回首页的整个链路都稳定。
   //
-  // 分母（reviewTotal）继续用 dueSnapshot 棘轮，但把 reviewIdsToday 并入 snapshot，
-  // 防止跨 UTC 零点导致 snapshot 清空重建时"已评分的复习题"因 nextReview > now 无法回补
-  // → reviewTotal 塌陷成 0 的 bug。
+  // 分母（reviewTotal）继续用 dueSnapshot 棘轮，同时把 reviewIdsToday 并入 snapshot，
+  // 兜住"已评分的复习题在 snapshot 重建后（例如整数级跨天再回望）因 nextReview 被推到未来
+  // 不再被扫到"的边缘情况——评分动作本身就是判据，分母必然 >= 分子。
   //
   // 新题（newDone）保持原口径：今日已评分中排除 dueIds、排除旧题库残留 id。
   const getTodayProgress = useCallback(() => {
