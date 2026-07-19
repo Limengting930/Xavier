@@ -1,0 +1,37 @@
+src/components/GoalPicker.tsx
+  s_8127b695b8ab1d::t_6be0e09b02283e 11-14,17-25,32-37,45,49-56
+  s_8127b695b8ab1d::t_c09ea2ef8ac34d 91-92,110-126,139-146
+src/App.tsx
+  s_8127b695b8ab1d::t_4d6dd972079f71 250
+src/components/learn/AIChatBot.tsx
+  s_8c6b2da052ce02::t_876aefacf3ca21 157-158
+src/main.tsx
+  s_8c6b2da052ce02::t_b53493218efbb3 6-36
+src/components/home/TodayCard.tsx
+  s_8127b695b8ab1d::t_c64f40896e388f 34-38
+  s_8127b695b8ab1d::t_31c9b422c29402 66,68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "46379b8536b77d96583cb05b5fa9c19581c1d534",
+  "prompts": {},
+  "sessions": {
+    "s_8127b695b8ab1d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_091e1b694ffe8xprixiO6wg1dB",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    },
+    "s_8c6b2da052ce02": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_08706b450ffe8wBSCgF1ZEwQSm",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    }
+  }
+}
