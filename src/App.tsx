@@ -226,7 +226,6 @@ function AppInner() {
             if (isGoalLocked) setLockedAlert(true)
             else setGoalPickerOpen(true)
           }}
-          isGoalLocked={isGoalLocked}
         />
       )}
       {page === 'library' && <LibraryPage onPreviewCard={(id, filteredIds) => startLearn('single', id, filteredIds)} />}

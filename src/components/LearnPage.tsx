@@ -8,6 +8,7 @@ import 'highlight.js/styles/github-dark.css'
 import PawStatusImage, { type PawStatus } from './library/PawStatusImage'
 import ClickImage from './learn/ClickImage'
 import FinishImage from './learn/FinishImage'
+import AIChatBot, { type ChatMessage } from './learn/AIChatBot'
 
 interface Props {
   onExit: () => void
@@ -24,6 +25,8 @@ export default function LearnPage({ onExit, queue, queueType, goal, startIdx }: 
   const [startTs] = useState(Date.now())
   const cardViewTs = useRef(Date.now())
   const viewportRef = useRef<HTMLDivElement>(null)
+  // AI 助手聊天记录：整个学习队列共享一份（策略 A），退出队列（组件卸载）自动销毁
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
 
   const isPreview = PREVIEW_TYPES.has(queueType)
   const total = queue.length
@@ -277,6 +280,13 @@ export default function LearnPage({ onExit, queue, queueType, goal, startIdx }: 
             <button className="cb-close" onClick={handleFlip}>×</button>
           </div>
           <div dangerouslySetInnerHTML={{ __html: renderAnswer(card!) }} />
+          {flipped && (
+            <AIChatBot
+              currentCard={card!}
+              messages={chatMessages}
+              onMessagesChange={setChatMessages}
+            />
+          )}
         </div>
       </div>
 

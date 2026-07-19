@@ -13,7 +13,6 @@ interface Props {
   onStartLearn: (type: string) => void
   goal: number
   onEditGoal: () => void
-  isGoalLocked: boolean
 }
 
 /**
@@ -43,7 +42,6 @@ export default function HomePage({
   onStartLearn,
   goal,
   onEditGoal,
-  isGoalLocked,
 }: Props) {
   const { state, getCardState, getTodayProgress } = useApp()
   const { store } = state
@@ -113,11 +111,12 @@ export default function HomePage({
     onStartLearn('review-due')
   }
 
+  // set 按钮：不在 Home 层做锁定判断（避免 Toast 文案与 App.tsx 弹窗文案不一致），
+  // 直接把点击透传给 App.tsx，由那里根据 newDone / goal 决定：
+  //   - 未开始（newDone === 0）→ 打开 GoalPicker
+  //   - 学习中（0 < newDone < goal）→ "已经开始学习了，先完成当前的学习计划吧"
+  //   - 已完成（newDone >= goal）→ "今日目标已达成，明天再来吧"
   const handleEditGoal = () => {
-    if (isGoalLocked) {
-      showToast('今日学习已结束，明天再来吧')
-      return
-    }
     onEditGoal()
   }
 
