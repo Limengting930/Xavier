@@ -1,0 +1,33 @@
+src/components/home/BunnyImage.tsx
+  s_423e9de24b2de9::t_7aff752b034cae 8
+src/components/home/AvatarImage.tsx
+  s_423e9de24b2de9::t_4394abe86c33a6 4
+scripts/optimize-assets.sh
+  s_423e9de24b2de9::t_69fdd2075578b7 1-7,10,12-14,23-28,30-31,34-48
+  s_423e9de24b2de9::t_681efdf9b58f91 8-9
+  s_423e9de24b2de9::t_6f41914cc7dee3 11
+  s_423e9de24b2de9::t_3ec9c04ce4ce71 15-17,20-22
+  s_423e9de24b2de9::t_d1d5e1ea41c433 29
+  s_423e9de24b2de9::t_a0d18d3dc3cc27 32-33
+  s_423e9de24b2de9::t_562c8969abdec6 49-51
+README.md
+  s_423e9de24b2de9::t_d2e2aa57c00cc9 3,5,7,9-14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50-61,64,66-72,74,76-93,95,97,99-101,103,105-107,109,111-112,114,116-117,119-120,122,124,127-129,132-133,135-136,138,140-141,145
+src/components/home/ReviewImage.tsx
+  s_423e9de24b2de9::t_6d7aa6a534bedc 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "6ccd49d7b4337939a0c95fd1a21454e6acfe7a5c",
+  "prompts": {},
+  "sessions": {
+    "s_423e9de24b2de9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_08758b8e6ffeKqv4DpBNXXLv1W",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    }
+  }
+}
