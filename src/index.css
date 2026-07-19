@@ -106,3 +106,15 @@ button {
   font-family: inherit;
   color: inherit;
 }
+
+/* 防止键盘弹出后 x 轴滚动 */
+html, body, #root {
+  overflow-x: hidden !important;
+  width: 100% !important;
+}
+
+/* iOS 防止 font-size < 16px 触发自动缩放导致偏移 */
+input, textarea {
+  font-size: 16px !important;
+  max-width: 100% !important;
+}

@@ -201,7 +201,7 @@
   font-weight: 500;
 }
 .today-card-cta {
-  margin-top: 18px;
+  margin: 18px auto 0;
   max-width: 260px;
 }
 
@@ -2299,19 +2299,22 @@
 /* ─── 快捷按钮 ─── */
 .aichat-quick {
   display: flex;
+  align-items: stretch;
   gap: 8px;
-  padding: 0 16px 10px;
-  overflow-x: auto;
-  flex-shrink: 0;
-  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  margin-bottom: 5px;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 .aichat-quick::-webkit-scrollbar { display: none; }
 .aichat-quick-btn {
+  flex: 1 1 0;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  flex-shrink: 0;
-  padding: 8px 14px;
+  padding: 8px 10px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
@@ -2320,6 +2323,9 @@
   border-radius: var(--r-pill);
   box-shadow: var(--shadow-soft);
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: transform var(--dur-fast), background var(--dur-fast);
 }
 .aichat-quick-btn:active { transform: scale(.94); }
