@@ -319,7 +319,7 @@ export default function AIChatBot({ currentCard, messages, onMessagesChange }: P
         aria-label="AI 助手"
         className={`aichat-fab${open ? ' active' : ''}`}
       >
-        <BotAvatar size={40} />
+        <BotAvatar size={42} />
       </button>
 
       {/* 对话面板 */}

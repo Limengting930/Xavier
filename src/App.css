@@ -2078,8 +2078,8 @@
   right: 25px;
   bottom: 150px; /* 避开底部评分栏 */
   z-index: 80;
-  width: 52px;
-  height: 52px;
+  width: 55px;
+  height: 55px;
   border-radius: var(--r-pill);
   border: 1px solid var(--accent-l);
   background: var(--card);
