@@ -1,0 +1,19 @@
+README.md
+  s_8c6b2da052ce02::t_57a1ecb7bd17ae 51,53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "f1b413088814ef0631327e35d1e6a9ec7efc73d8",
+  "prompts": {},
+  "sessions": {
+    "s_8c6b2da052ce02": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_08706b450ffe8wBSCgF1ZEwQSm",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    }
+  }
+}
