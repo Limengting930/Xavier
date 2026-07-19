@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { DefaultAvatar } from '../icons'
 
-const avatarModules = import.meta.glob('../../assets/avatar.png', {
+const avatarModules = import.meta.glob('../../assets/avatar.{png,webp}', {
   eager: true,
   query: '?url',
   import: 'default',

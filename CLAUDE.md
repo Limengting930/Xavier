@@ -3,7 +3,7 @@
 ## 项目概述
 
 - 本项目是「背了吗」前端面试闪卡 App，基于 SM-2 间隔重复算法帮助用户记忆前端知识点。
-- 技术栈：Vite + React 19 + TypeScript + 纯 CSS，无 UI 组件库。
+- 技术栈：Vite + React 19 + TypeScript
 - 后端依赖小红书内部 Builder 平台（BaaS），提供 OAuth 认证和 Supabase 数据库能力。
 - 优先遵循现有代码风格，不要引入新的架构、UI 库或状态管理库。
 

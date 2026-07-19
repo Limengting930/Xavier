@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { PlantIllustration } from '../icons'
 
-const plantModules = import.meta.glob('../../assets/plant.png', {
+const plantModules = import.meta.glob('../../assets/plant.{png,webp}', {
   eager: true,
   query: '?url',
   import: 'default',

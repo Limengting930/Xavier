@@ -4,7 +4,7 @@ import { useState } from 'react'
  * 尝试解析 src/assets/cat-search.{png,gif}
  * 未提供时静默不渲染，不会构建失败
  */
-const catModules = import.meta.glob('../../assets/cat-search.{png,gif}', {
+const catModules = import.meta.glob('../../assets/cat-search.{png,gif,webp}', {
   eager: true,
   query: '?url',
   import: 'default',

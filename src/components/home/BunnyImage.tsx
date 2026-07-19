@@ -5,7 +5,7 @@ import { BunnyIllustration } from '../icons'
  * 尝试解析 src/assets/bunny.png 或 bunny.gif
  * - 使用 import.meta.glob 惰性发现，未提供图片时不会导致构建失败
  */
-const bunnyModules = import.meta.glob('../../assets/bunny.{png,gif}', {
+const bunnyModules = import.meta.glob('../../assets/bunny.{png,gif,webp}', {
   eager: true,
   query: '?url',
   import: 'default',

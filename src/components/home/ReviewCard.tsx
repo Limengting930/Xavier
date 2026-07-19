@@ -28,7 +28,7 @@ export default function ReviewCard({ done, total, onStart, forceBubbleTick = 0 }
 
   let ctaLabel = '开始复习'
   if (!hasReview) ctaLabel = '暂无待复习'
-  else if (finished) ctaLabel = '今日已复习完'
+  else if (finished) ctaLabel = '今日已复习完成'
 
   const ctaDisabled = !hasReview || finished
 
