@@ -1,0 +1,32 @@
+CLAUDE.md
+  s_6532eb4599cc63::t_df530adf63b578 19-20
+  s_6532eb4599cc63::t_87871700423762 31
+src/App.tsx
+  s_6532eb4599cc63::t_0a489b721d7ac2 12-21
+src/store.tsx
+  s_8127b695b8ab1d::t_e4b9cc534993f8 144-148,162-163,165-178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "9062798b37a8f4fcb4892c85c25f7932acfe9cb0",
+  "prompts": {},
+  "sessions": {
+    "s_6532eb4599cc63": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0827fe624ffe47AYHJIPsK00Yx",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    },
+    "s_8127b695b8ab1d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_091e1b694ffe8xprixiO6wg1dB",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    }
+  }
+}
