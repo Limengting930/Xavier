@@ -7,7 +7,7 @@
   display: flex; align-items: flex-end; justify-content: center;
 }
 .goal-dialog {
-  width: 100%; max-width: 480px;
+  width: 100%;
   background: var(--card);
   border-radius: 24px 24px 0 0;
   padding: 28px 24px 40px;
@@ -72,3 +72,106 @@
 .goal-btn.primary:active { background: var(--accent-d); }
 .goal-btn.secondary { background: var(--accent-l); color: var(--accent); }
 
+
+/* ============================================================
+ * 自定义目标输入 + 校验提示（GoalPicker）
+ * ============================================================ */
+.goal-custom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.goal-custom-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.goal-custom-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1.5px solid var(--divider);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color .18s;
+}
+.goal-custom-input:focus { border-color: var(--accent); }
+.goal-custom-unit { font-size: 13px; color: var(--sub); flex-shrink: 0; }
+.goal-custom-btn {
+  /* 宽度与 goal-btns 里的 primary 按钮一致：容器 50% 减去 gap(12px) 的一半 */
+  flex: 0 0 calc(50% - 6px);
+  height: 42px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.goal-custom-btn:active { background: var(--accent-d); }
+
+.goal-err-tip {
+  margin: 12px 4px 0;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--pink-l);
+  color: var(--pink);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ============================================================
+ * 学习题库选择列表（DeckPicker）
+ * ============================================================ */
+.deck-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 46vh;
+  overflow-y: auto;
+  margin: 4px 0 8px;
+}
+.deck-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--divider);
+  border-radius: 14px;
+  background: var(--card);
+  cursor: pointer;
+  transition: all .18s var(--ease-out);
+}
+.deck-picker-item.is-active {
+  border-color: var(--accent);
+  background: var(--accent-l);
+}
+.deck-picker-icon { flex-shrink: 0; display: inline-flex; }
+.deck-picker-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deck-picker-count {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--sub);
+  font-variant-numeric: tabular-nums;
+}

@@ -10,6 +10,8 @@ interface Props {
   total: number
   onContinue: () => void
   onEditGoal: () => void
+  onEditDeck: () => void
+  deckName: string
   ctaLabel?: string
   ctaDisabled?: boolean
   hintText?: string
@@ -27,6 +29,8 @@ export default function TodayCard({
   total,
   onContinue,
   onEditGoal,
+  onEditDeck,
+  deckName,
   ctaLabel = '继续学习',
   ctaDisabled = false,
   hintText,
@@ -61,6 +65,15 @@ export default function TodayCard({
         <div className="today-card-title">
           <IconStar size={18} color="var(--accent)" />
           <span>今日学习目标</span>
+          <button
+            type="button"
+            className="today-card-deck-btn"
+            onClick={onEditDeck}
+            title="设置学习题库"
+          >
+            <span className="today-card-deck-name">{deckName}</span>
+            <span className="today-card-deck-caret">▾</span>
+          </button>
         </div>
 
         {/* 数字（done 截断到 total，避免调小 goal 后出现 20/10 这种超标显示） */}

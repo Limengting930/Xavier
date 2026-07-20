@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { AppProvider, useApp, todayLocal, isDueByLocalDate } from './store'
 import { exchangeCode, verifySession, redirectToLogin, loadQuestions, loadFromCloud } from './api'
 import type { Question } from './types'
+import { BUILTIN_DECK_ID, BUILTIN_DECK_NAME } from './types'
 import HomePage from './components/HomePage'
 import LibraryPage from './components/LibraryPage'
 import StatsPage from './components/StatsPage'
 import MePage from './components/MePage'
 import LearnPage from './components/LearnPage'
 import GoalPicker from './components/GoalPicker'
+import DeckPicker from './components/home/DeckPicker'
 import BottomNavigation, { type TabKey } from './components/home/BottomNavigation'
 import './styles/base.css'
 import './styles/home.css'
@@ -19,9 +21,12 @@ import './styles/goal-picker.css'
 import './styles/me.css'
 import './styles/speech-bubble.css'
 import './styles/chatbot.css'
+import './styles/upload.css'
 
 const GOAL_KEY = 'beile_goal'
 const GOAL_DATE_KEY = 'beile_goal_date'
+// 今日学习题库范围：'' = 全部题库（默认）；否则为某题库 docId / 内置题库 id
+const LEARN_DECK_KEY = 'beile_learn_deck'
 
 function AppInner() {
   const { state, dispatch, allCards, getCardState, getTodayProgress } = useApp()
@@ -32,6 +37,9 @@ function AppInner() {
     const saved = localStorage.getItem(GOAL_KEY)
     return saved ? parseInt(saved, 10) : 20
   })
+  // 今日学习题库范围（'' = 全部题库）
+  const [learnDeckScope, setLearnDeckScope] = useState<string>(() => localStorage.getItem(LEARN_DECK_KEY) || '')
+  const [deckPickerOpen, setDeckPickerOpen] = useState(false)
   const [learnState, setLearnState] = useState<{
     active: boolean
     queue: Question[]
@@ -117,12 +125,22 @@ function AppInner() {
 
     // type === 'all'（新题）：排除今日已学 + 排除当前到期的复习题，按分类 round-robin 取 goal 道
     // 复习题必须先在「待复习」卡片里完成，不会混进新题队列
+    //
+    // 「新上传卡优先」（§12）：allCards() 已把 custom（上传生成卡）按上传时间新→旧排在最前，
+    // 故 pool 保序后，最新文档的分类会成为 round-robin 分类遍历的打头项 → 今日新题先出最新上传卡。
+    // 复习优先红线不受影响：本分支与 review-due / canStartNew 无关，复习没清空前新题不解锁。
     const reviewIds = new Set(
       cards
         .filter(c => { const s = getCardState(c.id); return !!s && s.reviewCount > 0 && isDueByLocalDate(s.nextReview, t) })
         .map(c => c.id)
     )
-    const pool = cards.filter(c => !todayIds.has(c.id) && !reviewIds.has(c.id))
+    // 今日学习题库范围过滤（需求1/2）：learnDeckScope='' 学全库；否则只学该题库的新题
+    const inScope = (c: Question): boolean => {
+      if (!learnDeckScope) return true
+      if (learnDeckScope === BUILTIN_DECK_ID) return !c.source
+      return c.source?.docId === learnDeckScope
+    }
+    const pool = cards.filter(c => !todayIds.has(c.id) && !reviewIds.has(c.id) && inScope(c))
 
     // 按分类分组，组内保持原顺序（loadQuestions 已按 sort_order 升序）
     // 分类首次出现的顺序 = 该分类第 1 道题在 pool 中的位置，保证结果稳定
@@ -149,7 +167,7 @@ function AppInner() {
       if (picked === 0) break  // 所有分类都空了，pool 不够 goal 道
     }
     return result
-  }, [state.questions, state.store, getCardState, allCards])
+  }, [state.questions, state.store, getCardState, allCards, learnDeckScope])
 
   const startLearn = useCallback((type: string, cardId?: number, ids?: number[]) => {
     let queue: Question[]
@@ -181,6 +199,45 @@ function AppInner() {
   const exitLearn = useCallback(() => {
     setLearnState(null)
   }, [])
+
+  // 当前今日学习题库范围内的卡片总数（供 GoalPicker 判断目标是否超过题库题数）
+  const scopeCardCount = useCallback((scope: string): number => {
+    const cards = allCards()
+    if (!scope) return cards.length
+    if (scope === BUILTIN_DECK_ID) return cards.filter(c => !c.source).length
+    return cards.filter(c => c.source?.docId === scope).length
+  }, [allCards])
+
+  // 当前题库显示名
+  const deckName = !learnDeckScope
+    ? '全部题库'
+    : learnDeckScope === BUILTIN_DECK_ID
+      ? BUILTIN_DECK_NAME
+      : (state.store.documents || []).find(d => d.docId === learnDeckScope)?.name || '全部题库'
+
+  // 题库选项：全部 + 内置 + 各上传文档
+  const deckOptions = [
+    { v: '', l: '全部题库' },
+    { v: BUILTIN_DECK_ID, l: BUILTIN_DECK_NAME },
+    ...(state.store.documents || []).map(d => ({ v: d.docId, l: d.name })),
+  ]
+
+  // 选择今日学习题库
+  const handlePickDeck = useCallback((scope: string) => {
+    setLearnDeckScope(scope)
+    localStorage.setItem(LEARN_DECK_KEY, scope)
+    setDeckPickerOpen(false)
+  }, [])
+
+  // 若当前学习题库指向的文档已被删除，自动回退到「全部题库」，避免今日新题池为空
+  useEffect(() => {
+    if (!learnDeckScope || learnDeckScope === BUILTIN_DECK_ID) return
+    const exists = (state.store.documents || []).some(d => d.docId === learnDeckScope)
+    if (!exists) {
+      setLearnDeckScope('')
+      localStorage.setItem(LEARN_DECK_KEY, '')
+    }
+  }, [learnDeckScope, state.store.documents])
 
   // Show goal picker on first visit of the day (only once per day)
   // 用本地日期作为 key，与全站 today() 口径一致，避免北京时间 0:00-8:00 之间
@@ -235,9 +292,20 @@ function AppInner() {
             if (isGoalLocked) setLockedAlert(true)
             else setGoalPickerOpen(true)
           }}
+          onEditDeck={() => {
+            // 与「设置目标」一致的锁定判断：
+            // 已完成 → 弹「今日目标已达成」；进行中 → 弹「已经开始学习了…」
+            if (isGoalLocked) setLockedAlert(true)
+            else setDeckPickerOpen(true)
+          }}
+          deckName={deckName}
         />
       )}
-      {page === 'library' && <LibraryPage onPreviewCard={(id, filteredIds) => startLearn('single', id, filteredIds)} />}
+      {page === 'library' && (
+        <LibraryPage
+          onPreviewCard={(id, filteredIds) => startLearn('single', id, filteredIds)}
+        />
+      )}
       {page === 'stats' && <StatsPage />}
 
       {page === 'me' && <MePage user={state.user} goal={goal} />}
@@ -257,6 +325,18 @@ function AppInner() {
           onCancel={() => setGoalPickerOpen(false)}
           locked={false}
           minValue={newDone}
+          deckCardCount={scopeCardCount(learnDeckScope)}
+        />
+      )}
+
+      {/* Deck Picker：今日学习题库范围 */}
+      {deckPickerOpen && (
+        <DeckPicker
+          options={deckOptions}
+          current={learnDeckScope}
+          countOf={scopeCardCount}
+          onPick={handlePickDeck}
+          onClose={() => setDeckPickerOpen(false)}
         />
       )}
       {/* Locked Alert */}

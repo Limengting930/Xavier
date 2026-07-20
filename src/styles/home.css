@@ -512,3 +512,27 @@
   transform: translateX(-50%) translateY(0);
 }
 
+
+/* ─── 今日卡片·学习题库设置按钮（需求：紧跟「今日学习目标」文字后，间距 8px） ─── */
+.today-card-deck-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 44%;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--accent-l);
+  background: var(--accent-l);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s var(--ease-out);
+}
+.today-card-deck-btn:active { filter: brightness(0.96); }
+.today-card-deck-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.today-card-deck-caret { font-size: 10px; opacity: .8; flex-shrink: 0; }

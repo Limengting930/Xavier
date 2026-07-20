@@ -15,28 +15,57 @@ import { getCategoryIcon } from '../utils/categoryIcon'
 export default function StatsPage() {
   const { state, allCards, getCardState } = useApp()
   const { store } = state
-  const cards = useMemo(() => allCards(), [state.questions, store.custom])
+  const cards = useMemo(() => allCards(), [state.questions, store.custom, store.documents])
 
-  // Stats
+  // Stats（顶部全局区：跨领域仍有意义的指标）
   const dayCount = Object.keys(store.daily).filter(k => store.daily[k]?.studied > 0).length
   const totalDuration = Object.values(store.daily).reduce((a, b) => a + (b.duration || 0), 0)
   const totalMin = Math.round(totalDuration / 60000)
   const totalStudied = Object.values(store.daily).reduce((a, b) => a + (b.studied || 0), 0)
-  const mastered = cards.filter(c => { const s = getCardState(c.id); return s && s.status === 2 }).length
-  const rate = cards.length ? Math.round(mastered / cards.length * 100) : 0
 
-  // Category progress
-  const catProgress = useMemo(() => {
-    const cats = [...new Set(cards.map(c => c.cat))]
-    return cats.map(cat => {
-      const catCards = cards.filter(c => c.cat === cat)
-      const done = catCards.filter(c => { const s = getCardState(c.id); return s && s.status === 2 })
-      const pct = catCards.length ? Math.round(done.length / catCards.length * 100) : 0
-      return { cat, done: done.length, total: catCards.length, pct }
+  // 按来源（Deck）分区：内置题库（source 为空）+ 每个上传文档。
+  // 掌握率不再全局混算，避免上传其他领域文档稀释「内置题库」的掌握率。
+  const BUILTIN = '__builtin__'
+  const sections = useMemo(() => {
+    // 分组归属：card.source?.docId ?? '__builtin__'
+    const groups = new Map<string, typeof cards>()
+    for (const c of cards) {
+      const key = c.source?.docId ?? BUILTIN
+      const list = groups.get(key)
+      if (list) list.push(c)
+      else groups.set(key, [c])
+    }
+    const docNameOf = (docId: string) =>
+      (store.documents || []).find(d => d.docId === docId)?.name || '上传文档'
+
+    // 顺序：内置题库在前，其余文档按上传时间新→旧
+    const docOrder = [...(store.documents || [])]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map(d => d.docId)
+    const orderedKeys = [BUILTIN, ...docOrder].filter(k => groups.has(k))
+
+    return orderedKeys.map(key => {
+      const list = groups.get(key)!
+      const mastered = list.filter(c => getCardState(c.id)?.status === 2).length
+      const rate = list.length ? Math.round(mastered / list.length * 100) : 0
+      // 该来源内按 cat 的分类掌握度
+      const cats = [...new Set(list.map(c => c.cat))]
+      const catProgress = cats.map(cat => {
+        const catCards = list.filter(c => c.cat === cat)
+        const done = catCards.filter(c => getCardState(c.id)?.status === 2).length
+        const pct = catCards.length ? Math.round(done / catCards.length * 100) : 0
+        return { cat, done, total: catCards.length, pct }
+      })
+      return {
+        key,
+        title: key === BUILTIN ? '内置题库（AI 面试）' : docNameOf(key),
+        total: list.length,
+        mastered,
+        rate,
+        catProgress,
+      }
     })
-    // 按照总数或完成度排序可以更美观，或者保持原有顺序
-    // 这里保持原有逻辑
-  }, [cards, store.cards])
+  }, [cards, store.cards, store.documents, getCardState])
 
   return (
     <div className="page active library-page" id="page-stats">
@@ -83,41 +112,55 @@ export default function StatsPage() {
         </div>
       </div>
 
-      {/* 中间掌握率卡片 */}
-      <div className="stats-mastery-card">
-        <div className="value">{rate}%</div>
-        <div className="label">掌握率</div>
-        
-        {/* 左侧小装饰 */}
-        <div className="plant-decor-left">
-          <svg width="24" height="40" viewBox="0 0 24 40" fill="none">
-            <path d="M12 40 C12 30 6 24 4 16 C12 20 16 28 12 40" fill="#B7D9AE" opacity="0.8" />
-            <path d="M12 34 C18 28 22 20 20 12 C14 16 12 24 12 34" fill="#A5CE9D" opacity="0.8" />
-            <path d="M12 40 L12 20" stroke="#7BB077" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-          </svg>
-        </div>
-        <IconStar size={12} color="#F0A5B0" style={{ position: 'absolute', left: 40, top: 30, opacity: 0.8 }} />
-        <IconStar size={10} color="#E8A83C" style={{ position: 'absolute', right: 80, bottom: 20, opacity: 0.7 }} />
+      {/* 中间掌握率卡片：展示「内置题库」掌握率（核心指标，不被上传文档稀释）。
+          无内置题库时退回展示第一个分区。 */}
+      {(() => {
+        const primary = sections.find(s => s.key === BUILTIN) || sections[0]
+        const primaryRate = primary?.rate ?? 0
+        const primaryLabel = primary
+          ? (primary.key === BUILTIN ? '内置题库掌握率' : `${primary.title} 掌握率`)
+          : '掌握率'
+        return (
+          <div className="stats-mastery-card">
+            <div className="value">{primaryRate}%</div>
+            <div className="label">{primaryLabel}</div>
 
-        {/* 右侧盆栽 */}
-        <div className="plant-decor-right">
-          <PlantIllustration size={80} />
-        </div>
-      </div>
+            {/* 左侧小装饰 */}
+            <div className="plant-decor-left">
+              <svg width="24" height="40" viewBox="0 0 24 40" fill="none">
+                <path d="M12 40 C12 30 6 24 4 16 C12 20 16 28 12 40" fill="#B7D9AE" opacity="0.8" />
+                <path d="M12 34 C18 28 22 20 20 12 C14 16 12 24 12 34" fill="#A5CE9D" opacity="0.8" />
+                <path d="M12 40 L12 20" stroke="#7BB077" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+              </svg>
+            </div>
+            <IconStar size={12} color="#F0A5B0" style={{ position: 'absolute', left: 40, top: 30, opacity: 0.8 }} />
+            <IconStar size={10} color="#E8A83C" style={{ position: 'absolute', right: 80, bottom: 20, opacity: 0.7 }} />
 
-      {/* 底部各分类掌握度 */}
-      <div className="stats-cat-card">
-        <div className="stats-cat-header">
-          <h3 className="stats-cat-title">分类掌握度</h3>
-          <IconStar size={16} color="var(--accent)" filled style={{ marginLeft: 4, transform: 'rotate(15deg)' }} />
-          <div className="stats-cat-underline">
-            <HandUnderline width={110} />
+            {/* 右侧盆栽 */}
+            <div className="plant-decor-right">
+              <PlantIllustration size={80} />
+            </div>
           </div>
-        </div>
+        )
+      })()}
 
-        <div className="stats-cat-list">
-          {catProgress.map((cp) => {
-            return (
+      {/* 底部：按来源分区展示掌握度（内置题库 + 每个上传文档） */}
+      {sections.map(sec => (
+        <div key={sec.key} className="stats-cat-card">
+          <div className="stats-cat-header">
+            <h3 className="stats-cat-title" title={sec.title}>{sec.title}</h3>
+            <IconStar size={16} color="var(--accent)" filled style={{ marginLeft: 4, transform: 'rotate(15deg)' }} />
+            <div className="stats-cat-underline">
+              <HandUnderline width={110} />
+            </div>
+          </div>
+
+          <div className="stats-section-summary">
+            掌握 {sec.mastered} / {sec.total}（{sec.rate}%）
+          </div>
+
+          <div className="stats-cat-list">
+            {sec.catProgress.map((cp) => (
               <div key={cp.cat} className="stats-cat-item">
                 <div className="stats-cat-icon">
                   {getCategoryIcon(cp.cat)}
@@ -133,10 +176,10 @@ export default function StatsPage() {
                   <div className="stats-cat-fraction">{cp.done}/{cp.total}</div>
                 </div>
               </div>
-            )
-          })}
+            ))}
+          </div>
         </div>
-      </div>
+      ))}
     </div>
   )
 }

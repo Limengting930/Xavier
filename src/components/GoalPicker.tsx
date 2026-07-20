@@ -12,9 +12,14 @@ interface Props {
   // 例如已学 20 道，goal 就不能再改到 10（会造成 20/10 这种超标显示）
   // 只是把 <minValue 的选项标灰 + 禁选；locked=true 时优先，所有选项都不可选
   minValue?: number
+  // 当前今日学习题库范围内的题数：目标若超过它，提醒用户（需求3）
+  deckCardCount?: number
 }
 
-export default function GoalPicker({ initialValue, onConfirm, onCancel, locked = false, minValue = 0 }: Props) {
+const GOAL_MIN = 1
+const GOAL_MAX = 50
+
+export default function GoalPicker({ initialValue, onConfirm, onCancel, locked = false, minValue = 0, deckCardCount }: Props) {
   // 初始位置：优先用传入的 initialValue，但如果它小于 minValue（比如老 goal 已经不合法了），
   // 落到第一个 >= minValue 的选项上；没有合法选项时兜底到最后一个
   const legalOptions = OPTIONS.filter(v => v >= minValue)
@@ -24,10 +29,39 @@ export default function GoalPicker({ initialValue, onConfirm, onCancel, locked =
   const rawIdx = OPTIONS.indexOf(initialValue)
   const initIdx = rawIdx >= 0 && OPTIONS[rawIdx] >= minValue ? rawIdx : fallbackIdx
   const [selIdx, setSelIdx] = useState(initIdx)
+  // 自定义目标输入（需求4）
+  const [customVal, setCustomVal] = useState('')
+  // 错误提示（校验失败）/ 题库题数不足提醒（需求3）
+  const [errMsg, setErrMsg] = useState('')
+  // 已就"超过题库题数"提醒过的值：再次确认同值即放行（提醒但不硬阻断）
+  const warnedRef = useRef<number | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const startY = useRef(0)
   const startScrollTop = useRef(0)
+
+  // 统一确认：校验范围(1~50) + 题库题数提醒，通过后回调 onConfirm
+  const confirmWithCheck = useCallback((val: number) => {
+    if (!Number.isFinite(val) || val < GOAL_MIN) {
+      setErrMsg('目标必须大于1哦')
+      return
+    }
+    if (val > GOAL_MAX) {
+      setErrMsg('今日目标不能超过50哦')
+      return
+    }
+    if (minValue > 0 && val < minValue) {
+      setErrMsg(`今日已学 ${minValue} 题，目标不能小于此数`)
+      return
+    }
+    // 需求3：目标超过当前题库题数 → 先提醒一次；用户再次确认同一值即放行（不硬阻断）
+    if (typeof deckCardCount === 'number' && val > deckCardCount && warnedRef.current !== val) {
+      setErrMsg(`当前题库仅 ${deckCardCount} 题，目标已超过。如仍要设置，请再次点击确认`)
+      warnedRef.current = val
+      return
+    }
+    onConfirm(val)
+  }, [deckCardCount, minValue, onConfirm])
 
   // 判断某个 index 是否禁选：locked 时全禁；否则 <minValue 的禁
   const isDisabledIdx = useCallback(
@@ -141,13 +175,40 @@ export default function GoalPicker({ initialValue, onConfirm, onCancel, locked =
               disabled={isDisabledIdx(selIdx)}
               onClick={() => {
                 if (isDisabledIdx(selIdx)) return
-                onConfirm(OPTIONS[selIdx])
+                confirmWithCheck(OPTIONS[selIdx])
               }}
             >
               确定
             </button>
           )}
         </div>
+
+        {/* 自定义目标输入（需求4：1~50） */}
+        {!locked && (
+          <div className="goal-custom">
+            <span className="goal-custom-label">自定义</span>
+            <input
+              className="goal-custom-input"
+              type="number"
+              inputMode="numeric"
+              min={GOAL_MIN}
+              max={GOAL_MAX}
+              placeholder="1-50"
+              value={customVal}
+              onChange={e => { setCustomVal(e.target.value); setErrMsg(''); warnedRef.current = null }}
+            />
+            <span className="goal-custom-unit">题</span>
+            <button
+              className="goal-custom-btn"
+              onClick={() => confirmWithCheck(parseInt(customVal, 10))}
+            >
+              设置
+            </button>
+          </div>
+        )}
+
+        {/* 校验错误 / 题库提醒 */}
+        {errMsg && <div className="goal-err-tip">{errMsg}</div>}
       </div>
     </div>
   )

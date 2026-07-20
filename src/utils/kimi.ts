@@ -237,3 +237,50 @@ export async function streamChat(
   onDone()
   return finishReason ?? 'done'
 }
+
+/**
+ * 非流式一次性调用 Kimi (Moonshot)，返回完整文本。
+ * 用于结构化 JSON 生成（如上传文档 → 卡片），流式对 JSON 拼装无收益且更易出错。
+ * 复用与 streamChat 相同的 API_URL / API_KEY / MODEL / Authorization 逻辑。
+ *
+ * @param temperature 采样温度，结构化任务建议低温（默认 0.2）
+ * @param maxTokens   输出上限（默认 2048，容纳多张卡的 JSON）
+ * @throws 非 200 / 网络异常时抛错（含 429 限流，交由上层退避重试）
+ */
+export async function chatOnce(
+  messages: Message[],
+  opts: { signal?: AbortSignal; temperature?: number; maxTokens?: number } = {},
+): Promise<string> {
+  const { signal, temperature = 0.2, maxTokens = 2048 } = opts
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    signal,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages,
+      stream: false,
+      max_tokens: maxTokens,
+      temperature,
+    }),
+  })
+  if (res.status === 429) {
+    const err = new Error('Kimi API 限流（429）')
+    ;(err as any).status = 429
+    // 解析 Retry-After 头（秒）：服务端明确告知需等待多久，退避时优先尊重它
+    const ra = res.headers.get('Retry-After')
+    if (ra) {
+      const sec = Number(ra)
+      if (Number.isFinite(sec) && sec >= 0) (err as any).retryAfterMs = sec * 1000
+    }
+    throw err
+  }
+  if (!res.ok) throw new Error(`Kimi API error: ${res.status}`)
+  const json = await res.json()
+  const content = json?.choices?.[0]?.message?.content
+  if (typeof content !== 'string') throw new Error('Kimi API：响应缺少 content')
+  return content
+}

@@ -13,6 +13,8 @@ interface Props {
   onStartLearn: (type: string) => void
   goal: number
   onEditGoal: () => void
+  onEditDeck: () => void
+  deckName: string
 }
 
 /**
@@ -42,6 +44,8 @@ export default function HomePage({
   onStartLearn,
   goal,
   onEditGoal,
+  onEditDeck,
+  deckName,
 }: Props) {
   const { state, getCardState, getTodayProgress } = useApp()
   const { store } = state
@@ -135,6 +139,8 @@ export default function HomePage({
         total={goal}
         onContinue={handleStartNew}
         onEditGoal={handleEditGoal}
+        onEditDeck={onEditDeck}
+        deckName={deckName}
         ctaLabel={todayCtaLabel}
         ctaDisabled={todayCtaDisabled}
         hintText={todayHint}

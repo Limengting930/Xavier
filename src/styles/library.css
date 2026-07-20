@@ -14,7 +14,8 @@
   position: relative;
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 8px;
   padding: 4px 4px 12px;
 }
 .lib-title-wrap {
@@ -391,3 +392,65 @@
   font-variant-numeric: tabular-nums;
 }
 
+
+/* ============================================================
+ * 题库管理（题库筛选 + 删除/更新）· 追加于 library.css 末尾
+ * ============================================================ */
+
+/* 题库管理条：筛选到某个上传题库时显示 */
+.lib-deck-manage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 4px 12px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: var(--accent-l);
+  border: 1px solid var(--divider);
+}
+.lib-deck-manage-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lib-deck-manage-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.lib-deck-btn {
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--accent);
+  background: var(--card);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s var(--ease-out);
+}
+.lib-deck-btn:active { background: var(--accent); color: #fff; }
+.lib-deck-btn.danger {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+.lib-deck-btn.danger:active { background: var(--pink); color: #fff; }
+
+/* 删除确认弹框按钮行 */
+.lib-del-actions {
+  display: flex;
+  gap: 12px;
+}
+.lib-del-actions .goal-btn {
+  flex: 1;
+}
+/* 删除确认弹框的危险按钮（复用 goal-btn 基础样式，仅覆盖配色） */
+.goal-btn.danger {
+  background: var(--pink);
+  color: #fff;
+}
+.goal-btn.danger:active { filter: brightness(0.94); }

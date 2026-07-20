@@ -105,6 +105,8 @@ export async function loadFromCloud(): Promise<{
   custom_json: string
   mode: string
   achievements_json?: string  // 可选：user_progress 表尚未添加此列，此字段为未来扩展预留
+  documents_json?: string     // 可选：上传文档元数据列，老库无此列时读回 undefined
+  deleted_docs_json?: string  // 可选：已删题库墓碑列，老库无此列时读回 undefined
 } | null> {
   const r = await bfetch('/supabase/rows/query', {
     method: 'POST',
@@ -119,17 +121,21 @@ export async function loadFromCloud(): Promise<{
     custom_json: row.custom_json || '[]',
     mode: row.mode || 'flashcard',
     achievements_json: row.achievements_json,  // 老数据库返回 undefined，reducer 侧兼容处理
+    documents_json: row.documents_json,        // 老数据库返回 undefined，reducer 侧兼容处理
+    deleted_docs_json: row.deleted_docs_json,  // 老数据库返回 undefined，reducer 侧兼容处理
   }
 }
 
 export async function syncToCloud(
-  store: { cards: any; daily: any; custom: any; mode: string },
+  store: { cards: any; daily: any; custom: any; mode: string; documents?: any; deletedDocs?: any },
   cloudRowId: number | null,
 ): Promise<number | null> {
   const body = {
     cards_json: JSON.stringify(store.cards),
     daily_json: JSON.stringify(store.daily),
     custom_json: JSON.stringify(store.custom),
+    documents_json: JSON.stringify(store.documents || []),
+    deleted_docs_json: JSON.stringify(store.deletedDocs || []),
     mode: store.mode,
     updated_at: new Date().toISOString(),
   }

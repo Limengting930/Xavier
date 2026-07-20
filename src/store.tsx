@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useRef, useCallback, useEffect } from 'react'
-import type { Store, CardState, DayRecord, Question, UserInfo } from './types'
+import type { Store, CardState, DayRecord, Question, UserInfo, DocMeta } from './types'
+import { CUSTOM_ID_BASE } from './types'
 import { loadFromCloud, syncToCloud } from './api'
 
 // ══════════════════════════════════════════════════
@@ -188,6 +189,8 @@ export function loadLocal(): Store {
       custom: d.custom || [],
       mode: d.mode || 'flashcard',
       achievements: d.achievements || {},
+      documents: d.documents || [],
+      deletedDocs: d.deletedDocs || [],
     }
     // migration: old daily without ids
     // 从 cards.lastReview 反推每天学过哪些题；用本地日期，与新口径保持一致
@@ -216,6 +219,17 @@ export function saveLocal(store: Store) {
   try { localStorage.setItem(SK, JSON.stringify(store)) } catch {}
 }
 
+// 生成卡片 id 命名空间：基于当前 custom 计算下一个可用起始 id（§2.1）。
+// 必须基于当前 state.store.custom 在 reducer 内计算，禁止用 Date.now()/Math.random() 直接当 id。
+export function nextCustomIdBase(custom: Question[]): number {
+  let maxId = CUSTOM_ID_BASE
+  for (const c of custom) {
+    // 只在 custom 命名空间内取 max；防御非法 id
+    if (Number.isFinite(c.id) && c.id >= CUSTOM_ID_BASE && c.id > maxId) maxId = c.id
+  }
+  return maxId + 1
+}
+
 // ══════════════════════════════════════════════════
 // Context types
 // ══════════════════════════════════════════════════
@@ -239,6 +253,9 @@ type Action =
   | { type: 'RECHECK_ACHIEVEMENTS'; goal: number }
   | { type: 'TOGGLE_FAV'; cardId: number }
   | { type: 'SET_MODE'; mode: string }
+  | { type: 'ADD_GENERATED_CARDS'; cards: Omit<Question, 'id'>[]; doc: DocMeta }
+  | { type: 'APPEND_TO_DOCUMENT'; docId: string; cards: Omit<Question, 'id'>[]; categories: string[]; hash: string }
+  | { type: 'REMOVE_DOCUMENT'; docId: string }
   | { type: 'MERGE_CLOUD'; cloud: NonNullable<Awaited<ReturnType<typeof loadFromCloud>>> }
 
 function reducer(state: AppState, action: Action): AppState {
@@ -257,6 +274,69 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, store: action.store }
     case 'SET_MODE': {
       const store = { ...state.store, mode: action.mode }
+      saveLocal(store)
+      return { ...state, store }
+    }
+    case 'ADD_GENERATED_CARDS': {
+      // 原子写入：在 reducer 内基于当前 custom 计算 id，批量落库，触发一次 debounce 同步（§2.2）
+      let nextId = nextCustomIdBase(state.store.custom)
+      const docId = action.doc.docId
+      const docName = action.doc.name
+      const newCards: Question[] = action.cards.map(c => ({
+        ...c,
+        id: nextId++,
+        source: { docId, docName },
+        deckId: docId,
+      }))
+      const custom = [...state.store.custom, ...newCards]
+      const documents = [...(state.store.documents || []), action.doc]
+      // 若新 docId 恰好在墓碑里（几乎不会，uuid 全新），从墓碑移除，避免被 MERGE_CLOUD 反过滤
+      const deletedDocs = (state.store.deletedDocs || []).filter(id => id !== docId)
+      const store = { ...state.store, custom, documents, deletedDocs }
+      saveLocal(store)
+      return { ...state, store }
+    }
+    case 'APPEND_TO_DOCUMENT': {
+      // 增量追加（更新题库·方案A）：往已存在的 docId 追加新卡，保留旧卡学习进度。
+      // - id 沿用 nextCustomIdBase 递增，不与任何现有卡冲突；
+      // - 复用同 docId 的 docName；
+      // - 更新对应 DocMeta：categories 合并去重、cardCount 累加、hash 更新为最新内容；
+      //   createdAt 保留旧值（避免更新后题库在列表里跳到最前，打乱用户认知）。
+      const docId = action.docId
+      const targetDoc = (state.store.documents || []).find(d => d.docId === docId)
+      if (!targetDoc) return state // 目标题库不存在，安全兜底不写
+      const docName = targetDoc.name
+      let nextId = nextCustomIdBase(state.store.custom)
+      const newCards: Question[] = action.cards.map(c => ({
+        ...c,
+        id: nextId++,
+        source: { docId, docName },
+        deckId: docId,
+      }))
+      const custom = [...state.store.custom, ...newCards]
+      const mergedCats = [...new Set([...(targetDoc.categories || []), ...action.categories])]
+      const documents = (state.store.documents || []).map(d =>
+        d.docId === docId
+          ? { ...d, categories: mergedCats, cardCount: d.cardCount + newCards.length, hash: action.hash }
+          : d,
+      )
+      const store = { ...state.store, custom, documents }
+      saveLocal(store)
+      return { ...state, store }
+    }
+    case 'REMOVE_DOCUMENT': {
+      const docId = action.docId
+      const removedIds = new Set(
+        state.store.custom.filter(c => c.source?.docId === docId).map(c => c.id),
+      )
+      const custom = state.store.custom.filter(c => c.source?.docId !== docId)
+      const documents = (state.store.documents || []).filter(d => d.docId !== docId)
+      // 同时清理这些卡片 id 的学习状态，避免残留孤儿状态
+      const cards = { ...state.store.cards }
+      removedIds.forEach(id => { delete cards[id] })
+      // 记入墓碑：防止 MERGE_CLOUD 把已删题库从云端旧数据并集合并回来
+      const deletedDocs = [...new Set([...(state.store.deletedDocs || []), docId])]
+      const store = { ...state.store, custom, documents, cards, deletedDocs }
       saveLocal(store)
       return { ...state, store }
     }
@@ -326,6 +406,13 @@ function reducer(state: AppState, action: Action): AppState {
         const cloudCustom = JSON.parse(cloud.custom_json) as Question[]
         // achievements 是 v4 新增字段；兼容老云端数据（可能没有）
         const cloudAch = cloud.achievements_json ? (JSON.parse(cloud.achievements_json) as Record<string, number>) : {}
+        // documents 是「文件上传」新增字段；兼容老云端数据（可能没有此列 → undefined）
+        const cloudDocs = cloud.documents_json ? (JSON.parse(cloud.documents_json) as DocMeta[]) : []
+        // deletedDocs 墓碑：兼容老云端数据（可能没有此列 → undefined）
+        const cloudDeleted = cloud.deleted_docs_json ? (JSON.parse(cloud.deleted_docs_json) as string[]) : []
+        // 两端墓碑并集：任一端删过就算删，是"删除"这一意图的最终真相
+        const mergedDeleted = [...new Set([...(state.store.deletedDocs || []), ...cloudDeleted])]
+        const deletedSet = new Set(mergedDeleted)
 
         // merge cards: by lastReview
         const mergedCards = { ...state.store.cards }
@@ -339,20 +426,27 @@ function reducer(state: AppState, action: Action): AppState {
           const ld = mergedDaily[k]
           if (!ld || (cd.studied || 0) > (ld.studied || 0)) mergedDaily[k] = cd
         })
-        // merge custom: by id
+        // merge custom: by id；同时剔除属于已删题库（墓碑）的云端卡，防止删除后复活
         const existIds = new Set(state.store.custom.map(c => c.id))
-        const extraCustom = cloudCustom.filter(c => !existIds.has(c.id))
+        const extraCustom = cloudCustom.filter(
+          c => !existIds.has(c.id) && !(c.source && deletedSet.has(c.source.docId)),
+        )
         // merge achievements: 首次解锁时间取更早的那次
         const mergedAch: Record<string, number> = { ...(state.store.achievements || {}) }
         Object.entries(cloudAch).forEach(([id, ts]) => {
           if (!mergedAch[id] || ts < mergedAch[id]) mergedAch[id] = ts
         })
+        // merge documents: by docId（本地已有的保留，云端新增的补入）；剔除已删题库
+        const existDocIds = new Set((state.store.documents || []).map(d => d.docId))
+        const extraDocs = cloudDocs.filter(d => !existDocIds.has(d.docId) && !deletedSet.has(d.docId))
         const store: Store = {
           cards: mergedCards,
           daily: mergedDaily,
           custom: [...state.store.custom, ...extraCustom],
           mode: cloud.mode || state.store.mode,
           achievements: mergedAch,
+          documents: [...(state.store.documents || []), ...extraDocs],
+          deletedDocs: mergedDeleted,
         }
         saveLocal(store)
         return { ...state, store, cloudRowId: cloud.rowId }
@@ -400,7 +494,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const stateRef = useRef(state)
   stateRef.current = state
 
-  const allCards = useCallback(() => [...stateRef.current.questions, ...stateRef.current.store.custom], [])
+  // 题库展示 & 学习取题的统一顺序源头：
+  // custom（上传生成卡片）在前、按上传时间新→旧；内置题库在后（§12.1）。
+  // 排序键优先用 DocMeta.createdAt（同文档内保持生成顺序，用 id 次级升序）；
+  // 无 DocMeta 归属的 custom 卡降级用 id 倒序（id 递增分配，越大越新）。
+  // 每次调用都基于最新 store.custom / store.documents（读 ref，不缓存）。
+  const allCards = useCallback(() => {
+    const { custom, documents } = stateRef.current.store
+    const { questions } = stateRef.current
+    const docCreatedAt = new Map<string, number>()
+    ;(documents || []).forEach(d => docCreatedAt.set(d.docId, d.createdAt))
+    const sortedCustom = [...custom].sort((a, b) => {
+      const ta = a.source ? (docCreatedAt.get(a.source.docId) ?? 0) : 0
+      const tb = b.source ? (docCreatedAt.get(b.source.docId) ?? 0) : 0
+      // 上传时间新的文档整体靠前
+      if (tb !== ta) return tb - ta
+      // 同文档（或都无归属）：id 升序 → 保持生成顺序；无归属时 id 越大越新，故倒序
+      if (a.source && b.source && a.source.docId === b.source.docId) return a.id - b.id
+      return b.id - a.id
+    })
+    return [...sortedCustom, ...questions]
+  }, [])
 
   const getCardState = useCallback((id: number) => stateRef.current.store.cards[id] || null, [])
 
@@ -478,15 +592,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const t = today()
     const todayRecord = stateRef.current.store.daily[t]
     const todayIds = todayRecord?.ids || []
-    const reviewIdsToday = todayRecord?.reviewIds || []
+    const currentLibIds = new Set(allCards().map(c => c.id))
+    // 只统计当前题库仍存在的复习卡：题库被删除后，daily.reviewIds / dueIds 里的孤儿 id
+    // 需剔除，否则 reviewTotal / reviewDone 会被已删卡虚高，进度条数字失真。
+    const reviewIdsToday = (todayRecord?.reviewIds || []).filter(id => currentLibIds.has(id))
     // 把今天已评分的复习题 id 并入 dueIds，保证分母始终 >= 已复习数
     reviewIdsToday.forEach(id => dueIds.add(id))
-    const currentLibIds = new Set(allCards().map(c => c.id))
-    const reviewTotal = dueIds.size
+    // dueIds 同样剔除已删卡（getDueSnapshotIds 基于 allCards 扫描，理论上不含已删卡，
+    // 但棘轮 snapshot 可能残留上一次扫描到、之后被删的 id，这里统一收敛一次）
+    const liveDueIds = new Set([...dueIds].filter(id => currentLibIds.has(id)))
+    const reviewTotal = liveDueIds.size
     const reviewDone = reviewIdsToday.length
     // 新题 = 今日已评分中，属于当前题库、且不属于任何复习相关 id 的部分
-    // （reviewIdsToday 已经并入 dueIds，所以 !dueIds.has(id) 一并排除了 review 部分）
-    const newDone = todayIds.filter(id => currentLibIds.has(id) && !dueIds.has(id)).length
+    const newDone = todayIds.filter(id => currentLibIds.has(id) && !liveDueIds.has(id)).length
     const canStartNew = reviewTotal === 0 || reviewDone >= reviewTotal
     return { reviewTotal, reviewDone, newDone, canStartNew }
   }, [getDueSnapshotIds, allCards])
