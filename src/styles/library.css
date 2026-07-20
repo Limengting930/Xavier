@@ -1,0 +1,393 @@
+/* ============================================================
+ * LibraryPage  ·  题库页
+ * ============================================================ */
+.library-page {
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 20px 20px 120px;
+}
+
+/* Header：标题 + 右侧兔子 */
+.lib-header {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 4px 4px 12px;
+}
+.lib-title-wrap {
+  position: relative;
+  z-index: 3;
+}
+.lib-title {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: .3px;
+  line-height: 1.2;
+  margin: 0;
+}
+.lib-title-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  margin: 0 4px;
+}
+.lib-header-doodles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 搜索框 */
+.lib-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border-radius: 20px;
+  padding: 14px 18px;
+  margin: 8px 0 14px;
+  box-shadow: var(--shadow-soft);
+}
+.lib-search input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  min-width: 0;
+}
+.lib-search input::placeholder {
+  color: #B0AEB6;
+  font-weight: 500;
+}
+
+/* 趴在搜索框右上角的小猫装饰 */
+.lib-search-cat {
+  position: absolute;
+  right: 14px;
+  top: -46px;              /* 让身体一半露在框上方 */
+  width: 72px;
+  height: 72px;
+  z-index: 2;              /* 高于搜索框，视觉上"压在"框上 */
+  transform: rotate(-6deg);/* 微微歪一下，更可爱 */
+  pointer-events: none;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.08));
+}
+
+/* 筛选行 */
+.lib-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.lib-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1.5px solid var(--accent-l);
+  border-radius: var(--r-pill);
+  padding: 10px 16px 10px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.lib-select:hover { border-color: var(--accent); }
+.lib-select select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+}
+.lib-select-text {
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.lib-fav-tog {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sub);
+  cursor: pointer;
+  user-select: none;
+  padding: 4px;
+  white-space: nowrap;
+}
+.lib-fav-tog input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.lib-fav-tog.is-on { color: var(--text); }
+
+/* ─── LibFilterMenu · 自定义弹出筛选菜单 ─── */
+.lib-fm-wrap {
+  position: relative;
+  display: inline-block;
+  z-index: 20;
+}
+.lib-fm-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1.5px solid var(--accent-l);
+  border-radius: var(--r-pill);
+  padding: 10px 14px 10px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: border-color var(--dur-fast) var(--ease-out), transform .15s;
+}
+.lib-fm-trigger:hover { border-color: var(--accent); }
+.lib-fm-trigger.is-open {
+  border-color: var(--accent);
+  transform: translateY(1px);
+}
+.lib-fm-trigger-text {
+  min-width: 32px;
+  text-align: left;
+  white-space: nowrap;
+}
+.lib-fm-trigger-doodle {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  pointer-events: none;
+}
+
+/* 弹出面板 */
+.lib-fm-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  min-width: 180px;
+  background: var(--card);
+  border-radius: 20px;
+  padding: 10px;
+  box-shadow: 0 12px 32px rgba(90, 90, 90, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  animation: libFmPop .18s var(--ease-out);
+  overflow: hidden;
+}
+@keyframes libFmPop {
+  from { opacity: 0; transform: translateY(-6px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 面板小三角指示（连接触发器） */
+.lib-fm-arrow {
+  position: absolute;
+  top: -6px;
+  left: 44px;
+  width: 12px;
+  height: 12px;
+  background: var(--card);
+  border-left: 1px solid rgba(0, 0, 0, 0.04);
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  transform: rotate(45deg);
+}
+
+/* 菜单项 */
+.lib-fm-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.lib-fm-item:hover { background: rgba(167, 139, 250, 0.06); }
+.lib-fm-item.is-active { background: var(--accent-l); }
+.lib-fm-item-icon {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.lib-fm-item-label {
+  flex: 1;
+  min-width: 0;
+}
+.lib-fm-item-trailing {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* 二级子菜单（缩进） */
+.lib-fm-sub {
+  padding: 4px 8px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: libFmSubIn .18s var(--ease-out);
+}
+@keyframes libFmSubIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.lib-fm-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sub);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.lib-fm-sub-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lib-fm-sub-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lib-fm-sub-item:hover {
+  background: rgba(167, 139, 250, 0.06);
+  color: var(--text);
+}
+.lib-fm-sub-item.is-active {
+  background: var(--accent-l);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* 卡片列表 */
+.lib-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lib-empty {
+  text-align: center;
+  color: var(--sub);
+  padding: 60px 0;
+  font-size: 14px;
+}
+.lib-item {
+  background: var(--card);
+  border-radius: 22px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.lib-item:hover { transform: translateY(-2px); }
+.lib-item:active { transform: scale(.99); }
+.lib-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.lib-item-cat {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-l);
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  line-height: 1.2;
+}
+.lib-item-fav {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.lib-item-fav:active { transform: scale(.85); }
+
+.lib-item-q {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--text);
+  margin-bottom: 14px;
+  word-break: break-word;
+}
+.lib-item-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lib-item-status {
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+.lib-item-status svg {
+  flex-shrink: 0;
+  transform: translateY(-1px);
+}
+.lib-item-status.sl-know   { color: #6AAF67; }
+.lib-item-status.sl-fuzzy  { color: #E8A83C; }
+.lib-item-status.sl-forget { color: #E17B7B; }
+.lib-item-status.sl-new    { color: var(--sub); }
+.lib-item-next {
+  font-size: 13px;
+  color: var(--sub);
+  font-weight: 500;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+

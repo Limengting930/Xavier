@@ -1,0 +1,74 @@
+/* ============================================================
+ * base.css · 全局容器 + 通用 Toast / Overlay / Sheet
+ * (CSS 变量在 index.css)
+ * ============================================================ */
+
+/* ─── App Container ─── */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 同步状态浮标 */
+.sync-badge {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 60;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, .9);
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+  color: var(--sub);
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+  pointer-events: none;
+}
+
+/* ============================================================
+ * Toast (通用)
+ * ============================================================ */
+.toast {
+  position: fixed; top: 72px; left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: rgba(0, 0, 0, .78); color: #fff;
+  padding: 8px 18px; border-radius: 20px;
+  font-size: 14px; font-weight: 600;
+  opacity: 0; transition: all .25s;
+  pointer-events: none; z-index: 200; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ============================================================
+ * Overlay & Sheet (通用)
+ * ============================================================ */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, .45);
+  z-index: 100; display: none; align-items: flex-end;
+}
+.overlay.show { display: flex; }
+.sheet {
+  background: var(--card); border-radius: 20px 20px 0 0;
+  padding: 20px 20px 40px; width: 100%; max-height: 85dvh; overflow-y: auto;
+}
+.sheet-title {
+  font-size: 17px; font-weight: 800; margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sheet-close {
+  font-size: 20px; color: var(--sub); background: none;
+  border: none; cursor: pointer;
+}
+.mode-option {
+  background: var(--bg); border-radius: 14px; padding: 14px 16px;
+  margin-bottom: 10px; cursor: pointer;
+  border: 2px solid transparent; transition: all .18s;
+}
+.mode-option.selected { border-color: var(--accent); background: var(--accent-l); }
+.mode-option h4 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.mode-option p { font-size: 12px; color: var(--sub); }
+

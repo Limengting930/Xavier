@@ -16,7 +16,8 @@
 ## 目录结构
 
 - `src/App.tsx`：主入口，负责认证流程、页面切换、学习队列构建、目标管理
-- `src/App.css`：全部样式，基于 CSS 变量体系，不要内联样式或引入外部 CSS
+- `src/index.css`：CSS 变量定义（`:root`）+ 全局基础样式
+- `src/styles/`：按模块拆分的样式文件（`base.css` 全局容器+通用 Toast/Overlay/Sheet；`home.css` / `nav.css` / `learn.css` / `library.css` / `stats.css` / `goal-picker.css` / `me.css` / `speech-bubble.css` / `chatbot.css` 各对应组件），统一在 `src/App.tsx` 顶部 import；基于 CSS 变量体系，不要内联样式或引入外部 CSS
 - `src/store.tsx`：全局状态（Context + useReducer）、SRS 算法、localStorage 持久化
 - `src/api.ts`：所有 Builder API 请求封装，认证、题目加载、云端同步
 - `src/types.ts`：类型定义和常量（PREVIEW_TYPES、QUEUE_LABELS 等）
@@ -27,7 +28,7 @@
 - 所有 Builder API 请求必须放在 `src/api.ts`，组件不直接调用 `fetch`。
 - 状态读写必须通过 `useApp()` Hook，不要在组件内直接操作 localStorage。
 - 新增可复用逻辑（如计算连击天数、格式化时长）抽到 `src/store.tsx` 或独立 hook 文件。
-- CSS 新增样式写在 `src/App.css` 末尾，用注释标注归属模块。
+- CSS 新增样式写在 `src/styles/` 下对应模块文件末尾（全局/通用样式写 `base.css`），用注释标注归属模块；如新增模块需在 `src/App.tsx` 顶部 import。
 - 组件 props 必须定义 TypeScript interface，不用 `any`。
 
 ## 关键约束

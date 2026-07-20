@@ -141,6 +141,11 @@ export function getAchievementProgress(
   goal: number,
   libIds: Set<number>,
 ): { current: number; target: number; unit: string } {
+  // 已解锁的成就永远显示满格。否则会出现："first 昨天已解锁，今天早上打开还没学题时
+  // 显示 0/10、0%"，让用户误以为成就重置了。
+  // 未解锁的成就才展示"今日进度 / 目标"作为激励。
+  const unlocked = !!store.achievements?.[id]
+
   const t = today()
   const todayIds = store.daily[t]?.ids || []
   // 到期判断改「本地日期口径」，与 checkAchievements / getTodayProgress 保持一致
@@ -154,14 +159,23 @@ export function getAchievementProgress(
   const mastered = countMastered(store.cards, libIds)
 
   const clamp = (cur: number, tgt: number) => Math.min(cur, tgt)
+  // 已解锁 → current 直接置为 target（100%），进度条不再回退
+  const done = (tgt: number, unit: string) => ({ current: tgt, target: tgt, unit })
   switch (id) {
-    case 'first': return { current: clamp(newDoneToday, goal || 1), target: goal || 1, unit: '题' }
-    case 'streak3': return { current: clamp(streak, 3), target: 3, unit: '天' }
-    case 'streak7': return { current: clamp(streak, 7), target: 7, unit: '天' }
-    case 'streak10': return { current: clamp(streak, 10), target: 10, unit: '天' }
-    case 'master30': return { current: clamp(mastered, 30), target: 30, unit: '题' }
-    case 'masterAll': return { current: clamp(mastered, libIds.size || 1), target: libIds.size || 1, unit: '题' }
-    default: return { current: 0, target: 1, unit: '' }
+    case 'first':
+      return unlocked ? done(goal || 1, '题') : { current: clamp(newDoneToday, goal || 1), target: goal || 1, unit: '题' }
+    case 'streak3':
+      return unlocked ? done(3, '天') : { current: clamp(streak, 3), target: 3, unit: '天' }
+    case 'streak7':
+      return unlocked ? done(7, '天') : { current: clamp(streak, 7), target: 7, unit: '天' }
+    case 'streak10':
+      return unlocked ? done(10, '天') : { current: clamp(streak, 10), target: 10, unit: '天' }
+    case 'master30':
+      return unlocked ? done(30, '题') : { current: clamp(mastered, 30), target: 30, unit: '题' }
+    case 'masterAll':
+      return unlocked ? done(libIds.size || 1, '题') : { current: clamp(mastered, libIds.size || 1), target: libIds.size || 1, unit: '题' }
+    default:
+      return { current: 0, target: 1, unit: '' }
   }
 }
 

@@ -1,0 +1,74 @@
+/* ============================================================
+ * Goal Picker
+ * ============================================================ */
+.goal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0, 0, 0, .45);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.goal-dialog {
+  width: 100%; max-width: 480px;
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  padding: 28px 24px 40px;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, .15);
+}
+.goal-title {
+  font-size: 18px; font-weight: 800; color: var(--text);
+  text-align: center; margin-bottom: 6px;
+}
+.goal-subtitle {
+  font-size: 13px; color: var(--sub);
+  text-align: center; margin-bottom: 20px;
+}
+.goal-locked-tip {
+  background: var(--yellow-l); color: var(--yellow);
+  font-size: 13px; font-weight: 600;
+  text-align: center; padding: 10px 16px;
+  border-radius: 14px; margin-bottom: 16px;
+}
+
+.goal-picker-wrap {
+  position: relative; height: 240px; overflow: hidden;
+  margin: 0 auto; max-width: 200px;
+}
+.goal-picker-bar {
+  position: absolute; top: 50%; left: 0; right: 0;
+  height: 48px; transform: translateY(-50%);
+  background: var(--accent-l);
+  border-radius: 12px; pointer-events: none; z-index: 1;
+}
+.goal-picker-list {
+  height: 100%; overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  position: relative; z-index: 2;
+}
+.goal-picker-list::-webkit-scrollbar { display: none; }
+.goal-picker-list.locked { pointer-events: none; opacity: .6; }
+.goal-picker-item {
+  height: 48px; display: flex; align-items: center; justify-content: center;
+  gap: 6px; scroll-snap-align: center; cursor: pointer;
+  transition: transform .15s;
+}
+.goal-picker-item.selected .goal-num {
+  color: var(--accent); font-size: 28px; font-weight: 800;
+}
+.goal-picker-item.selected .goal-unit { color: var(--accent); }
+.goal-num {
+  font-size: 22px; font-weight: 700; color: var(--sub);
+  transition: all .15s;
+}
+.goal-unit { font-size: 14px; color: var(--sub); }
+
+.goal-btns { display: flex; gap: 12px; margin-top: 20px; }
+.goal-btn {
+  flex: 1; height: 48px; border: none; border-radius: 14px;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  transition: all .18s;
+}
+.goal-btn.primary { background: var(--accent); color: #fff; }
+.goal-btn.primary:active { background: var(--accent-d); }
+.goal-btn.secondary { background: var(--accent-l); color: var(--accent); }
+

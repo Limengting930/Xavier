@@ -1,0 +1,205 @@
+/* ============================================================
+ * StatsPage
+ * ============================================================ */
+
+/* Top Row Cards */
+.stats-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.stats-top-card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 44px 10px 14px;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-height: 118px;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+.stats-top-card .icon-box {
+  width: 26px;
+  height: 26px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+}
+.stats-top-card.blue .icon-box { background: #EEF2FF; color: #8A8EF2; }
+.stats-top-card.purple .icon-box { background: var(--accent-l); color: var(--accent); }
+.stats-top-card.pink .icon-box { background: #FFF0F5; color: #F0A5B0; }
+
+.stats-top-card .star-decor {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.stats-top-card .value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+  white-space: nowrap;
+}
+.stats-top-card .value small {
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: 1px;
+}
+.stats-top-card .label {
+  font-size: 11px;
+  color: var(--sub);
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+}
+
+/* Middle Card: Mastery Rate */
+.stats-mastery-card {
+  background: var(--card);
+  border-radius: 28px;
+  padding: 24px 20px;
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 16px;
+  position: relative;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  overflow: visible;
+}
+.stats-mastery-card .value {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 8px;
+  letter-spacing: -1px;
+}
+.stats-mastery-card .label {
+  font-size: 14px;
+  color: var(--sub);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.stats-mastery-card .plant-decor-left {
+  position: absolute;
+  left: 20px;
+  bottom: 24px;
+}
+.stats-mastery-card .plant-decor-right {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+}
+.stats-mastery-card .star-decor-1 {
+  position: absolute;
+  left: 40px;
+  top: 40px;
+}
+.stats-mastery-card .star-decor-2 {
+  position: absolute;
+  right: 110px;
+  bottom: 30px;
+}
+
+/* Bottom Card: Category Progress */
+.stats-cat-card {
+  background: var(--card);
+  border-radius: 28px;
+  padding: 24px 20px;
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 24px;
+}
+.stats-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 24px;
+  position: relative;
+}
+.stats-cat-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+.stats-cat-underline {
+  position: absolute;
+  left: 0;
+  bottom: -8px;
+}
+
+.stats-cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.stats-cat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.stats-cat-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.stats-cat-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  width: 90px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stats-cat-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.stats-cat-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--accent-l);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.stats-cat-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.6s var(--ease-out);
+}
+.stats-cat-fraction {
+  font-size: 13px;
+  color: var(--sub);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
+}
+

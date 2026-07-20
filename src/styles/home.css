@@ -1,0 +1,514 @@
+/* ============================================================
+ * HomePage
+ * ============================================================ */
+.home-page {
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 20px 20px 120px;
+}
+
+/* ─── Header ─── */
+.home-header {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 4px 22px;
+  min-height: 112px;
+}
+.home-header-left {
+  position: relative;
+  z-index: 3;
+}
+
+.home-greet-title {
+  font-family: var(--font-handwrite-cn);
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+.home-greet-sub {
+  font-size: 16px;
+  color: var(--sub);
+  font-weight: 500;
+  letter-spacing: .3px;
+}
+.home-header-doodles {
+  position: absolute;
+  top: 8px;
+  right: 64px;
+  width: 320px;
+  height: 96px;
+  pointer-events: none;
+  z-index: 1;
+}
+.home-header-right {
+  position: relative;
+  z-index: 3;
+}
+.home-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #F6EAD8;
+  border: 3px solid #FFFFFF;
+  box-shadow: var(--shadow-avatar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ─── Today Card (main card) ─── */
+.today-card {
+  position: relative;
+  background: var(--card);
+  border-radius: var(--r-xl);
+  padding: 24px 22px 22px 34px;
+  box-shadow: var(--shadow-soft);
+  overflow: visible;
+  min-height: 236px;
+  margin-bottom: 22px;
+}
+
+.today-card-holes {
+  position: absolute;
+  top: 24px;
+  bottom: 24px;
+  left: 12px;
+  width: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.today-card-hole {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #E8E4DA;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, .06);
+}
+
+.today-card-body {
+  position: relative;
+  z-index: 2;
+}
+.today-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 14px;
+  letter-spacing: .2px;
+}
+.today-card-nums {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.today-card-done {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+.today-card-sep {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--sub);
+  margin: 0 4px;
+}
+.today-card-total {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+}
+.today-card-unit {
+  font-size: 15px;
+  color: var(--sub);
+  margin-left: 2px;
+}
+.today-card-percent {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+.today-card-percent-label {
+  font-size: 13px;
+  color: var(--sub);
+}
+.today-card-percent-value {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 700;
+}
+.today-card-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--sub);
+  font-weight: 500;
+}
+.today-card-cta {
+  margin: 18px auto 0;
+  max-width: 260px;
+}
+
+.today-card-bunny {
+  position: absolute;
+  right: 45px;
+  top: 40px;
+  z-index: 6;
+  cursor: pointer;
+}
+
+.review-card-illust {
+  position: absolute;
+  right: 45px;
+  top: 40px;
+  z-index: 6;
+  cursor: pointer;
+}
+
+/* ─── SET tape sticker ─── */
+.tape-sticker-set {
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+  transition: transform var(--dur-fast) var(--ease-out);
+  z-index: 5;
+}
+.tape-sticker-set:hover { transform: rotate(4deg) scale(1.03); }
+.tape-sticker-set:active { transform: rotate(4deg) scale(.97); }
+.tape-sticker-set-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  font-size: 15px;
+  font-weight: 800;
+  color: #7A6640;
+  letter-spacing: 1.5px;
+  font-family: var(--font-sans);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ─── Progress bar ─── */
+.ui-progress {
+  width: 100%;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  position: relative;
+}
+.ui-progress-fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  transition: width 400ms var(--ease-out);
+}
+
+/* ─── Primary button ─── */
+.ui-primary-btn {
+  position: relative;
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: var(--shadow-btn);
+  transition: transform var(--dur-base) var(--ease-spring),
+              filter var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+}
+.ui-primary-btn:hover { filter: brightness(1.03); }
+.ui-primary-btn:active { transform: scale(.98); }
+.ui-primary-btn.is-disabled,
+.ui-primary-btn:disabled {
+  background: #D8D2E8;
+  box-shadow: none;
+  cursor: default;
+  filter: none;
+}
+.ui-primary-btn-text { line-height: 1; }
+.ui-primary-btn-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  color: var(--accent);
+}
+
+/* ─── Stats Row (3 tiles) ─── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.stat-card {
+  position: relative;
+  background: var(--card);
+  border-radius: 24px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-soft);
+  cursor: default;
+  transition: transform var(--dur-base) var(--ease-out);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: space-between;
+  min-width: 0;   /* 让 grid 单元允许收缩 */
+}
+.stat-card[role='button'] { cursor: pointer; }
+.stat-card[role='button']:hover { transform: translateY(-2px); }
+
+/* 主体：icon（左） + 内容（右） 横向布局 */
+.stat-card-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+.stat-tile {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stat-tile-purple { background: #ECE8FF; }
+.stat-tile-green  { background: #EAF7E8; }
+.stat-tile-orange { background: #FFE3D6; }
+
+.stat-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stat-label {
+  font-size: 15px;
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: .1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stat-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.stat-value {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -.5px;
+}
+.stat-unit {
+  font-size: 10px;
+  color: var(--sub);
+  font-weight: 600;
+  margin-left: 1px;
+}
+.stat-desc {
+  font-size: 13px;
+  color: var(--sub);
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* ─── Bottom row (Growth + Quote) ─── */
+.home-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ─── Growth Card ─── */
+.growth-card {
+  position: relative;
+  background: var(--green-ll);
+  border-radius: 24px;
+  padding: 16px 14px 14px;
+  box-shadow: var(--shadow-soft);
+  overflow: visible;
+  min-height: 148px;
+  display: flex;
+  flex-direction: column;
+}
+.growth-card-body {
+  position: relative;
+  z-index: 2;
+}
+.growth-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6A9B62;
+  margin-bottom: 8px;
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+
+.growth-card-sub {
+  font-size: 11px;
+  color: #86A882;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+.growth-card-num {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.growth-card-num-value {
+  font-size: 30px;
+  font-weight: 900;
+  color: #6A9B62;
+  line-height: 1;
+  letter-spacing: -.5px;
+}
+.growth-card-num-unit {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6A9B62;
+}
+.growth-card-tip {
+  font-size: 11px;
+  color: #86A882;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.growth-card-plant {
+  position: absolute;
+  right: -12px;
+  bottom: -10px;
+  pointer-events: none;
+  opacity: .95;
+}
+
+/* ─── Quote Card (便签) ─── */
+.quote-card {
+  position: relative;
+  background: var(--yellow-l);
+  border-radius: 24px;
+  padding: 16px 18px 16px 24px;
+  box-shadow: var(--shadow-soft);
+  overflow: visible;
+  min-height: 148px;
+  /* 网格纸质感 */
+  background-image:
+    linear-gradient(rgba(232, 168, 60, .08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 168, 60, .08) 1px, transparent 1px);
+  background-size: 14px 14px;
+  background-position: 4px 4px;
+  background-color: var(--yellow-l);
+}
+.quote-card-holes {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 8px;
+  width: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.quote-card-hole {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(232, 168, 60, .28);
+}
+.quote-card-body {
+  position: relative;
+  z-index: 2;
+}
+.quote-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #C58C1E;
+  margin-bottom: 8px;
+  letter-spacing: .2px;
+}
+.quote-card-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.quote-card-line {
+  font-family: var(--font-handwrite-en);
+  font-size: 20px;
+  font-weight: 500;
+  color: #6C4A0A;
+  line-height: 1.2;
+  letter-spacing: .3px;
+}
+
+/* ─── Home Toast ─── */
+.home-toast {
+  position: fixed;
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: rgba(47, 47, 47, .88);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  transition: all .25s var(--ease-out);
+  pointer-events: none;
+  z-index: 200;
+  white-space: nowrap;
+}
+.home-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
