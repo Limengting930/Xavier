@@ -1,0 +1,27 @@
+README.md
+  s_456cc595e56d55::t_6bc914b3d2be24 158-207
+  s_456cc595e56d55::t_53b15aa692fa8d 156-157,208-209
+vite.config.ts
+  s_456cc595e56d55::t_32e9ec292dd681 7-15
+src/App.tsx
+  s_456cc595e56d55::t_a923feaec5feaf 211-215
+  s_456cc595e56d55::t_71fdea7605afd8 6
+src/utils/preloadAssets.ts
+  s_456cc595e56d55::t_d217dd620c64cd 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "5aa3bd41484f04b92d14a5467a9e705b7063b1b6",
+  "prompts": {},
+  "sessions": {
+    "s_456cc595e56d55": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_08189ea95ffepKdld8Ogt1dtBT",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    }
+  }
+}
