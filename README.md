@@ -153,6 +153,60 @@ npm run build                        # 验证产物体积
 > 每个图片组件都带 SVG fallback（`src/components/icons.tsx`），素材缺失或加载失败会自动回退。
 > 构建时 <4KB 小图被 Vite 内联为 base64（省请求），较大图独立成带 hash 的 `.webp`。
 
+### 图片加载与缓存优化
+
+除了压缩体积，还针对「刷新 / 切换导航时图片被重复请求 / 重新加载」做了优化。
+
+**背景**：图片默认打包成带 hash 的独立 `.webp` 文件。要让浏览器缓存它们、避免刷新重复下载，
+标准做法是服务器对 `/assets/*` 配长缓存头（`Cache-Control: public, max-age=31536000, immutable`）。
+但**本项目部署平台（小红书 Builder）不支持配置静态资源缓存头** —— 没有缓存头，浏览器不会缓存图片，
+即使前端做了「预加载」也只是提前请求一次、用完即弃，后续每个 `<img>` 挂载仍会重复请求。
+
+**实际采用方案：构建内联（base64）**。既然无法配缓存头，就让图片**不再是独立请求** ——
+调高 `vite.config.ts` 的 `build.assetsInlineLimit`，把 `assets` 图片全部内联进 JS/CSS：
+
+```ts
+// vite.config.ts
+build: {
+  assetsInlineLimit: 20 * 1024, // 20KB，覆盖现有全部图（最大 ~13KB）
+}
+```
+
+效果：
+
+- 构建产物 `dist/assets` 下**不再有独立 `.webp`**，图片以 base64 随 JS/CSS 一起加载；
+- **切换导航**：bundle 早在内存，图片是其中的字符串，`<img>` 直接用，**零网络请求**；
+- **刷新页面**：图片跟主 bundle 一起走，不再有几十个散图各自重复请求。
+- 代价：主 JS/CSS 体积略增（图片总量本就压到 ~85KB，gzip 后增量可接受）。
+
+> 注意：`pdf.worker` 等是 JS chunk（非 asset），不受 `assetsInlineLimit` 影响，仍按需独立加载。
+> 新增图片若 > 20KB 会退回独立文件（重新出现重复请求问题），需相应调高阈值。
+
+**辅助：全量预加载**（`src/utils/preloadAssets.ts`）：App 挂载时用 `import.meta.glob` 收集
+`src/assets` 下所有图片并 `new Image()` 预加载。内联后 glob 返回 data URI，预加载基本成为空操作；
+保留它是为了兼容「未内联的散图」场景（如阈值下有大图时），仍能提前缓存、减少切页闪烁。
+
+**备选（其他支持缓存头的平台推荐）**：若部署平台可配缓存头，更优做法是不内联、保持散图 + 配长缓存：
+
+| 资源 | 缓存策略 | 原因 |
+|---|---|---|
+| `/assets/*`（带 hash 的 js/css/图片） | `Cache-Control: public, max-age=31536000, immutable` | 内容变文件名就变，可永久强缓存 |
+| `index.html` | `Cache-Control: no-cache`（或很短 max-age） | 必须每次校验，才能拿到引用新 hash 资源的最新版本 |
+
+```nginx
+location /page/beile-ma-react/assets/ {
+  add_header Cache-Control "public, max-age=31536000, immutable";
+}
+location = /page/beile-ma-react/index.html {
+  add_header Cache-Control "no-cache";
+}
+```
+
+> **验证**：线上 F12 → Network → 过滤 Img。内联方案下切导航 / 刷新都应**看不到 webp 图片请求**；
+> 缓存头方案下刷新时图片状态应为 `(from disk cache)` / `304`。
+
+
+
 ## 部署
 
 - `vite.config.ts` 的 `base` 上线时须为 `/page/beile-ma-react/`。

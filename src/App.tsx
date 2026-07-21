@@ -3,6 +3,7 @@ import { AppProvider, useApp, todayLocal, isDueByLocalDate } from './store'
 import { exchangeCode, verifySession, redirectToLogin, loadQuestions, loadFromCloud } from './api'
 import type { Question } from './types'
 import { BUILTIN_DECK_ID, BUILTIN_DECK_NAME } from './types'
+import { preloadAssets } from './utils/preloadAssets'
 import HomePage from './components/HomePage'
 import LibraryPage, { type LibFilterState } from './components/LibraryPage'
 import StatsPage from './components/StatsPage'
@@ -205,6 +206,11 @@ function AppInner() {
 
   const exitLearn = useCallback(() => {
     setLearnState(null)
+  }, [])
+
+  // 预加载所有图片资源：切换导航时图片已缓存，避免可见的重新加载/闪烁
+  useEffect(() => {
+    preloadAssets()
   }, [])
 
   // ── 方案A：多端同步·主动拉取云端更新 ──

@@ -73,7 +73,7 @@
 /* 趴在搜索框右上角的小猫装饰 */
 .lib-search-cat {
   position: absolute;
-  right: 14px;
+  right: 1px;
   top: -46px;              /* 让身体一半露在框上方 */
   width: 72px;
   height: 72px;
