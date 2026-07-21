@@ -167,13 +167,12 @@
 }
 .today-card-cta {
   margin: 18px auto 0;
-  max-width: 260px;
 }
 
 .today-card-bunny {
   position: absolute;
   right: 45px;
-  top: 40px;
+  top: 65px;
   z-index: 6;
   cursor: pointer;
 }
@@ -181,7 +180,7 @@
 .review-card-illust {
   position: absolute;
   right: 45px;
-  top: 40px;
+  top: 50px;
   z-index: 6;
   cursor: pointer;
 }

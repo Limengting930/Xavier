@@ -49,7 +49,7 @@ export default function TodayCard({
     <section className="today-card">
       {/* 装饰：SET 纸胶带贴纸 */}
       <TapeStickerSet
-        style={{ position: 'absolute', top: -8, right: 18, transform: 'rotate(6deg)' }}
+        style={{ position: 'absolute', top: -25, right: 1, transform: 'rotate(8deg)' }}
         onClick={onEditGoal}
       />
 

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useRef, useCallback, useEffect } from 'react'
 import type { Store, CardState, DayRecord, Question, UserInfo, DocMeta } from './types'
-import { CUSTOM_ID_BASE } from './types'
+import { CUSTOM_ID_BASE, BUILTIN_DECK_ID } from './types'
 import { loadFromCloud, syncToCloud } from './api'
 
 // ══════════════════════════════════════════════════
@@ -92,6 +92,42 @@ function countMastered(cards: Record<string, CardState>, libIds: Set<number>): n
   return n
 }
 
+// 按「题库(Deck)」把当前题库 id 分组：内置题库（不属于任何 custom 文档的卡）+ 每个上传文档。
+// 返回 deckKey -> id[]，deckKey 为 BUILTIN_DECK_ID 或文档 docId。只含非空题库。
+function buildDeckGroups(store: Store, libIds: Set<number>): Map<string, number[]> {
+  // custom 卡 id -> 所属 docId
+  const idToDoc = new Map<number, string>()
+  store.custom.forEach(c => { if (c.source) idToDoc.set(c.id, c.source.docId) })
+  const groups = new Map<string, number[]>()
+  libIds.forEach(id => {
+    const key = idToDoc.get(id) ?? BUILTIN_DECK_ID // 不属于任何文档 → 内置题库
+    const list = groups.get(key)
+    if (list) list.push(id)
+    else groups.set(key, [id])
+  })
+  return groups
+}
+
+// 是否存在「被完整掌握的题库」：某题库非空且其所有卡片 status===2（成就 master30 新口径）
+function hasFullyMasteredDeck(cards: Record<string, CardState>, groups: Map<string, number[]>): boolean {
+  for (const ids of groups.values()) {
+    if (ids.length > 0 && ids.every(id => cards[id]?.status === 2)) return true
+  }
+  return false
+}
+
+// 完成度最高的题库进度（用于成就进度条展示）：返回 {done,total}
+function bestDeckProgress(cards: Record<string, CardState>, groups: Map<string, number[]>): { done: number; total: number } {
+  let best = { done: 0, total: 1, ratio: -1 }
+  for (const ids of groups.values()) {
+    if (ids.length === 0) continue
+    const done = ids.filter(id => cards[id]?.status === 2).length
+    const ratio = done / ids.length
+    if (ratio > best.ratio) best = { done, total: ids.length, ratio }
+  }
+  return { done: best.done, total: best.total }
+}
+
 // 成就检测：传入最新的 store（评分后）+ 今日 goal + 当前题库 id 集合，
 // 返回新增的成就时间戳 map。已解锁的成就不会覆盖（保持首次时间）。
 export function checkAchievements(
@@ -126,8 +162,11 @@ export function checkAchievements(
   if (!next.streak3 && streak >= 3) next.streak3 = now
   if (!next.streak7 && streak >= 7) next.streak7 = now
   if (!next.streak10 && streak >= 10) next.streak10 = now
-  // master30
-  if (!next.master30 && mastered >= 30) next.master30 = now
+  // master30（新口径）：掌握任意一个完整题库（内置题库 或 某个上传文档）即解锁
+  if (!next.master30) {
+    const groups = buildDeckGroups(store, libIds)
+    if (hasFullyMasteredDeck(store.cards, groups)) next.master30 = now
+  }
   // masterAll：题库不为空且全部掌握
   if (!next.masterAll && libIds.size > 0 && mastered >= libIds.size) next.masterAll = now
 
@@ -171,8 +210,13 @@ export function getAchievementProgress(
       return unlocked ? done(7, '天') : { current: clamp(streak, 7), target: 7, unit: '天' }
     case 'streak10':
       return unlocked ? done(10, '天') : { current: clamp(streak, 10), target: 10, unit: '天' }
-    case 'master30':
-      return unlocked ? done(30, '题') : { current: clamp(mastered, 30), target: 30, unit: '题' }
+    case 'master30': {
+      // 新口径：掌握一个完整题库。进度展示"完成度最高的题库"的 done/total。
+      const best = bestDeckProgress(store.cards, buildDeckGroups(store, libIds))
+      return unlocked
+        ? done(best.total || 1, '题')
+        : { current: clamp(best.done, best.total || 1), target: best.total || 1, unit: '题' }
+    }
     case 'masterAll':
       return unlocked ? done(libIds.size || 1, '题') : { current: clamp(mastered, libIds.size || 1), target: libIds.size || 1, unit: '题' }
     default:
@@ -254,7 +298,7 @@ type Action =
   | { type: 'TOGGLE_FAV'; cardId: number }
   | { type: 'SET_MODE'; mode: string }
   | { type: 'ADD_GENERATED_CARDS'; cards: Omit<Question, 'id'>[]; doc: DocMeta }
-  | { type: 'APPEND_TO_DOCUMENT'; docId: string; cards: Omit<Question, 'id'>[]; categories: string[]; hash: string }
+  | { type: 'APPEND_TO_DOCUMENT'; docId: string; cards: Omit<Question, 'id'>[]; categories: string[]; hash: string; fingerprint?: string }
   | { type: 'REMOVE_DOCUMENT'; docId: string }
   | { type: 'MERGE_CLOUD'; cloud: NonNullable<Awaited<ReturnType<typeof loadFromCloud>>> }
 
@@ -317,7 +361,7 @@ function reducer(state: AppState, action: Action): AppState {
       const mergedCats = [...new Set([...(targetDoc.categories || []), ...action.categories])]
       const documents = (state.store.documents || []).map(d =>
         d.docId === docId
-          ? { ...d, categories: mergedCats, cardCount: d.cardCount + newCards.length, hash: action.hash }
+          ? { ...d, categories: mergedCats, cardCount: d.cardCount + newCards.length, hash: action.hash, fingerprint: action.fingerprint ?? d.fingerprint }
           : d,
       )
       const store = { ...state.store, custom, documents }
@@ -448,6 +492,12 @@ function reducer(state: AppState, action: Action): AppState {
           documents: [...(state.store.documents || []), ...extraDocs],
           deletedDocs: mergedDeleted,
         }
+        // 合并后若与本地实质相同（多端拉取常见），不替换 store，避免触发无谓的写回云端（防同步乒乓）。
+        // 仅在 cloudRowId 变化时更新它（首次拿到行 id），不改 store 就不会触发 debounce 写回。
+        const unchanged = JSON.stringify(store) === JSON.stringify(state.store)
+        if (unchanged) {
+          return state.cloudRowId === cloud.rowId ? state : { ...state, cloudRowId: cloud.rowId }
+        }
         saveLocal(store)
         return { ...state, store, cloudRowId: cloud.rowId }
       } catch {
@@ -475,6 +525,7 @@ interface AppContextType {
   rateCard: (cardId: number, quality: number, goal: number) => void
   addDuration: (ms: number) => void
   syncToCloudDebounced: () => void
+  pullFromCloud: () => Promise<void>
   getTodayProgress: () => { reviewTotal: number; reviewDone: number; newDone: number; canStartNew: boolean }
 }
 
@@ -621,6 +672,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }, 2000)
   }, [])
 
+  // 主动从云端拉取并合并（方案A：多端同步）。
+  // 仅登录态执行；走 MERGE_CLOUD 合并语义（本地打底、云端补充更新项），
+  // 不会覆盖本地尚未同步的改动。用于"已打开的设备"感知其他端的更新。
+  const pullFromCloud = useCallback(async () => {
+    const st = stateRef.current
+    if (!st.user) return
+    const cloud = await loadFromCloud()
+    if (cloud) dispatch({ type: 'MERGE_CLOUD', cloud })
+  }, [])
+
   // Cloud sync on store changes
   useEffect(() => {
     syncToCloudDebounced()
@@ -629,7 +690,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={{
       state, dispatch, allCards, getCardState, isNew, isDue, isWeak, isFav,
-      toggleFav, rateCard, addDuration, syncToCloudDebounced, getTodayProgress,
+      toggleFav, rateCard, addDuration, syncToCloudDebounced, pullFromCloud, getTodayProgress,
     }}>
       {children}
     </AppContext.Provider>

@@ -6,10 +6,13 @@ import {
   SUPPORTED_EXT,
   DOC_CAT_FALLBACK,
   CUSTOM_CARDS_SOFT_LIMIT,
+  MIN_DOC_CONTENT_CHARS,
+  BUILTIN_DECK_NAME,
 } from '../types'
-import { parseFile, hashText, fileExt } from '../utils/docParser'
+import { parseFile, hashText, contentFingerprint, fileExt } from '../utils/docParser'
 import { chunk } from '../utils/chunker'
 import { generateCategories, generateCards, collectUsedCategories } from '../utils/cardGen'
+import CatSearchImage from './library/CatSearchImage'
 
 interface Props {
   onClose: () => void
@@ -19,7 +22,7 @@ interface Props {
   updateTarget?: { docId: string; docName: string; categories: string[] }
 }
 
-type Phase = 'idle' | 'parsing' | 'generating' | 'success' | 'error'
+type Phase = 'idle' | 'naming' | 'parsing' | 'generating' | 'success' | 'error'
 
 // uuid 生成（带降级）
 function genUuid(): string {
@@ -35,6 +38,10 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
   const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 })
   const [message, setMessage] = useState('')
   const [resultCount, setResultCount] = useState(0)
+  // 新建模式：选文件后先让用户为题库命名（默认文件名）
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [deckName, setDeckName] = useState('')
+  const [nameError, setNameError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -46,7 +53,9 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
     onClose()
   }, [onClose])
 
-  const runPipeline = useCallback(async (file: File) => {
+  const runPipeline = useCallback(async (file: File, nameOverride?: string) => {
+    // 新建模式题库名：优先用用户重命名的值，否则回退文件名
+    const deckDisplayName = (nameOverride && nameOverride.trim()) || file.name
     // 1. 校验类型
     const ext = fileExt(file.name)
     if (ext === 'doc') {
@@ -71,24 +80,37 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
       setPhase('parsing'); setMessage('正在解析文档…')
       const { text, type } = await parseFile(file)
 
-      // 4. 文档 hash 去重（新建 / 更新语义不同）。hash 基于解析后纯文本，与既有数据口径一致。
+      // 3.1 空态校验：去空白后有效字符过少（如只有标题、正文为空）→ 视为空文档，拦截
+      if (text.replace(/\s/g, '').length < MIN_DOC_CONTENT_CHARS) {
+        setPhase('error'); setMessage('当前文档为空')
+        return
+      }
+
+      // 4. 文档去重（新建 / 更新语义不同）。
+      //    - fingerprint：归一化内容指纹，跨格式判重（同一份内容的 docx/md/pdf 互相拦截）。
+      //    - hash：解析后纯文本精确 hash，兼容无 fingerprint 的老数据。
       const hash = await hashText(text)
+      const fingerprint = await contentFingerprint(text)
       const docs = state.store.documents || []
-      const hashHit = docs.find(d => d.hash === hash)
+      // 命中判定：优先按内容指纹（跨格式）；老数据无 fingerprint 时回退按精确 hash
+      const dupHit = docs.find(d =>
+        d.fingerprint ? d.fingerprint === fingerprint : d.hash === hash,
+      )
       if (isUpdate) {
         // 更新模式：命中同 docId → 内容无变化；命中别的 docId → 该内容其实属于另一个题库
-        if (hashHit && hashHit.docId === updateTarget!.docId) {
+        if (dupHit && dupHit.docId === updateTarget!.docId) {
           setPhase('error'); setMessage('文档内容无变化，无需更新')
           return
         }
-        if (hashHit && hashHit.docId !== updateTarget!.docId) {
-          setPhase('error'); setMessage(`该内容已作为《${hashHit.name}》导入过`)
+        if (dupHit && dupHit.docId !== updateTarget!.docId) {
+          setPhase('error'); setMessage(`该内容已作为《${dupHit.name}》导入过`)
           return
         }
       } else {
-        // 新建模式：命中任意题库即拦截
-        if (hashHit) {
-          setPhase('error'); setMessage(`该文档已导入过（生成过 ${hashHit.cardCount} 张卡）`)
+        // 新建模式：命中任意题库即拦截（含"同内容的其他格式"）
+        if (dupHit) {
+          setPhase('error')
+          setMessage(`该文档已导入过（《${dupHit.name}》，可能是同内容的其他格式，已生成 ${dupHit.cardCount} 张卡）`)
           return
         }
       }
@@ -110,7 +132,7 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
           ...allCards().map(c => c.cat),
         ]),
       ]
-      const docNameForGen = isUpdate ? updateTarget!.docName : file.name
+      const docNameForGen = isUpdate ? updateTarget!.docName : deckDisplayName
       let categories: string[] = []
       try {
         categories = await generateCategories(chunks, docNameForGen, existingCats, controller.signal)
@@ -157,6 +179,8 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
       }
 
       // 9. 收敛最终分类清单 + 写入（新建 vs 追加）
+      // 写入前再确认未被中断：防止用户在生成末尾、dispatch 前点了「取消生成」仍写入半成品
+      if (controller.signal.aborted) return
       const usedCats = collectUsedCategories(deduped)
       if (isUpdate) {
         dispatch({
@@ -165,13 +189,15 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
           cards: deduped,
           categories: usedCats,
           hash,
+          fingerprint,
         })
       } else {
         const doc: DocMeta = {
           docId: genUuid(),
-          name: file.name,
+          name: deckDisplayName,
           type,
           hash,
+          fingerprint,
           cardCount: deduped.length,
           categories: usedCats,
           createdAt: Date.now(),
@@ -183,7 +209,6 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
       setResultCount(deduped.length)
       setPhase('success')
       const parts = [isUpdate ? `新增 ${deduped.length} 张卡片` : `成功生成 ${deduped.length} 张卡片`]
-      if (failedChunks > 0) parts.push(`${failedChunks} 段未能解析已跳过`)
       if (truncated) parts.push('文档较大，仅处理了前部分内容')
       const totalCustom = state.store.custom.length + deduped.length
       if (totalCustom > CUSTOM_CARDS_SOFT_LIMIT) parts.push('本地卡片较多，建议清理')
@@ -192,7 +217,7 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
       if (e?.name === 'AbortError') return
       setPhase('error')
       const msg = String(e?.message || '')
-      if (/未能从文档中提取|扫描版|加密|损坏/.test(msg)) setMessage(msg)
+      if (/未能从文档中提取|扫描版|加密|损坏|PDF|解析组件|docx/i.test(msg)) setMessage(msg)
       else if (/Kimi|API|fetch|network|Failed to fetch/i.test(msg)) setMessage('AI 服务暂不可用，请稍后重试')
       else setMessage(msg || '生成失败，请稍后重试')
     }
@@ -202,8 +227,52 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
     const file = e.target.files?.[0]
     // 允许重复选择同一文件：清空 value
     e.target.value = ''
-    if (file) runPipeline(file)
-  }, [runPipeline])
+    if (!file) return
+    if (isUpdate) {
+      // 更新模式：追加到已有题库，题库名固定，不需要重命名
+      runPipeline(file)
+      return
+    }
+    // 新建模式：先让用户为题库命名（默认取文件名去扩展名）
+    const dot = file.name.lastIndexOf('.')
+    const defaultName = dot > 0 ? file.name.slice(0, dot) : file.name
+    setPendingFile(file)
+    setDeckName(defaultName)
+    setPhase('naming')
+  }, [runPipeline, isUpdate])
+
+  // 确认题库命名 → 开始生成
+  const confirmName = useCallback(() => {
+    if (!pendingFile) return
+    const name = deckName.trim()
+    if (!name) { setNameError('请输入题库名称'); return }
+    // 重名校验：不能与已有题库（含内置题库）同名（trim 后比较）
+    const norm = (s: string) => s.trim().toLowerCase()
+    const dup = norm(name) === norm(BUILTIN_DECK_NAME)
+      || (state.store.documents || []).some(d => norm(d.name) === norm(name))
+    if (dup) { setNameError('已存在同名题库，请换一个名称'); return }
+    const file = pendingFile
+    setPendingFile(null)
+    setNameError('')
+    runPipeline(file, name)
+  }, [pendingFile, deckName, runPipeline, state.store.documents])
+
+  // 取消命名 → 回到初始态
+  const cancelName = useCallback(() => {
+    setPendingFile(null)
+    setDeckName('')
+    setNameError('')
+    setPhase('idle')
+  }, [])
+
+  // 中断生成：终止在途 AI 请求，回到可重新选择文件的初始态（不关闭弹窗、不写半成品）
+  const handleCancelGen = useCallback(() => {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setProgress({ done: 0, total: 0 })
+    setMessage('')
+    setPhase('idle')
+  }, [])
 
   const busy = phase === 'parsing' || phase === 'generating'
   const pct = progress.total > 0 ? Math.round(progress.done / progress.total * 100) : 0
@@ -232,6 +301,36 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
           </>
         )}
 
+        {phase === 'naming' && (
+          <div className="upload-naming-box">
+            <div className="upload-naming-file" title={pendingFile?.name}>
+              已选择：{pendingFile?.name}
+            </div>
+            <label className="upload-naming-label">题库名称</label>
+            <input
+              className="upload-naming-input"
+              type="text"
+              value={deckName}
+              placeholder="为这个题库起个名字"
+              maxLength={40}
+              autoFocus
+              onChange={e => { setDeckName(e.target.value); setNameError('') }}
+              onKeyDown={e => { if (e.key === 'Enter') confirmName() }}
+            />
+            {nameError && <div className="upload-error">{nameError}</div>}
+            <div className="upload-naming-actions">
+              <button className="upload-btn" onClick={cancelName}>取消</button>
+              <button
+                className="upload-btn primary"
+                disabled={!deckName.trim()}
+                onClick={confirmName}
+              >
+                开始生成
+              </button>
+            </div>
+          </div>
+        )}
+
         {busy && (
           <div className="upload-progress-box">
             <div className="upload-progress-msg">{message}</div>
@@ -244,12 +343,17 @@ export default function UploadSheet({ onClose, onGoLibrary, updateTarget }: Prop
               </>
             )}
             {phase === 'parsing' && <div className="upload-spinner" aria-hidden />}
+            <button className="upload-cancel-btn" onClick={handleCancelGen}>
+              取消生成
+            </button>
           </div>
         )}
 
         {phase === 'success' && (
           <div className="upload-success-box">
-            <div className="upload-success-emoji">🎉</div>
+            <div className="upload-success-emoji">
+              <CatSearchImage size={80} />
+            </div>
             <div className="upload-success-msg">{message}</div>
             <div className="upload-success-actions">
               <button className="upload-btn primary" onClick={() => { onGoLibrary(); onClose() }}>

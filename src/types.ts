@@ -58,7 +58,8 @@ export interface DocMeta {
   docId: string        // uuid
   name: string         // 原始文件名
   type: string         // 'md' | 'docx' | 'pdf'
-  hash: string         // 解析后纯文本的 SHA-256（去重用）
+  hash: string         // 解析后纯文本的 SHA-256（同一文件精确去重用）
+  fingerprint?: string // 跨格式内容指纹（归一化后 SHA-256）：判断 docx/md 等不同格式是否同一份内容。可选，兼容老数据
   cardCount: number    // 该文档生成的卡片数
   categories: string[] // 该文档最终使用的分类清单（去重收敛后）
   createdAt: number    // Date.now()
@@ -82,7 +83,7 @@ export const ACHIEVEMENTS = [
   { id: 'streak3', icon: '🔥', name: '三日不辍', desc: '连续学习3天' },
   { id: 'streak7', icon: '⚡', name: '一周坚持', desc: '连续学习7天' },
   { id: 'streak10', icon: '🏆', name: '十全十美', desc: '连续学习10天' },
-  { id: 'master30', icon: '👑', name: '三十而立', desc: '掌握30道题' },
+  { id: 'master30', icon: '👑', name: '一库在握', desc: '掌握一个题库' },
   { id: 'masterAll', icon: '🛡️', name: '通关副本', desc: '掌握所有题目' },
 ] as const
 
@@ -117,6 +118,10 @@ export const DOC_CAT_FALLBACK = '其他'
 export const ORPHAN_CAT_MERGE_THRESHOLD = 3
 /** custom 卡片软上限，超过提示清理（不硬阻断） */
 export const CUSTOM_CARDS_SOFT_LIMIT = 2000
+/** 文档有效正文最小字符数（去空白后）：低于此视为"空文档/只有标题"，拦截不生成 */
+export const MIN_DOC_CONTENT_CHARS = 20
+/** 单个分块的最小有效正文字符数（去空白后）：低于此视为"只有标题、无正文"，跳过不喂 AI，防幻觉 */
+export const MIN_CHUNK_CONTENT_CHARS = 12
 /** 逐块生成卡片的并发度：同时发起的 LLM 请求数。2 是速度与限流(429)的稳妥平衡点 */
 export const GEN_CONCURRENCY = 2
 /** 内置题库（source 为空的卡）的逻辑 docId，用于题库筛选/统计分区 */

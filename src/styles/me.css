@@ -448,7 +448,6 @@
 }
 .review-card-cta {
   margin: 18px auto 0;
-  max-width: 260px;
 }
 
 /* ReviewCard 内的主按钮覆盖为粉色主题（未禁用时） */

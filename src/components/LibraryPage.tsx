@@ -7,20 +7,33 @@ import PawStatusImage, { type PawStatus } from './library/PawStatusImage'
 import LibFilterMenu, { type FilterType } from './library/LibFilterMenu'
 import UploadSheet from './UploadSheet'
 
-interface Props {
-  onPreviewCard: (id: number, filteredIds: number[]) => void
+/** 题库页筛选状态。提升到 App 层持有，切换底部导航不重置（仅刷新页面才回默认）。 */
+export interface LibFilterState {
+  search: string
+  filterType: FilterType
+  filterSub: string
+  onlyFav: boolean
+  deckScope: string
 }
 
-export default function LibraryPage({ onPreviewCard }: Props) {
+interface Props {
+  onPreviewCard: (id: number, filteredIds: number[]) => void
+  filter: LibFilterState
+  onFilterChange: (updater: (prev: LibFilterState) => LibFilterState) => void
+}
+
+export default function LibraryPage({ onPreviewCard, filter, onFilterChange }: Props) {
   const { state, dispatch, allCards, getCardState, toggleFav } = useApp()
-  const [search, setSearch] = useState('')
-  const [filterType, setFilterType] = useState<FilterType>('all')
-  const [filterSub, setFilterSub] = useState('')
-  const [onlyFav, setOnlyFav] = useState(false)
+  // 筛选状态来自 App 层（受控）；下面提供同名局部 setter 包装，尽量不改动原有逻辑
+  const { search, filterType, filterSub, onlyFav, deckScope } = filter
+  const patch = useCallback(
+    (p: Partial<LibFilterState>) => onFilterChange(prev => ({ ...prev, ...p })),
+    [onFilterChange],
+  )
+  const setSearch = useCallback((v: string) => patch({ search: v }), [patch])
+  const setOnlyFav = useCallback((v: boolean) => patch({ onlyFav: v }), [patch])
+
   const [uploadOpen, setUploadOpen] = useState(false)
-  // 题库范围：独立于 filterType 的"当前题库上下文"。'' = 全部题库；否则为某题库 docId / 内置题库 id。
-  // 选了题库后，知识点/掌握程度/搜索/收藏都在该题库范围内叠加筛选。
-  const [deckScope, setDeckScope] = useState('')
   // 更新目标：非 null 时以「更新模式」打开 UploadSheet
   const [updateTarget, setUpdateTarget] = useState<{ docId: string; docName: string; categories: string[] } | null>(null)
   // 待删除确认的题库
@@ -98,31 +111,24 @@ export default function LibraryPage({ onPreviewCard }: Props) {
   const handleFilterChange = useCallback((type: FilterType, sub: string) => {
     if (type === 'deck') {
       // 切换题库范围。切库后旧的知识点/状态筛选可能不适用于新库 → 重置回「全部」
-      setDeckScope(sub)
-      setFilterType('all')
-      setFilterSub('')
+      patch({ deckScope: sub, filterType: 'all', filterSub: '' })
     } else if (type === 'all') {
       // 顶层「全部」：彻底清空所有筛选（含题库范围）
-      setDeckScope('')
-      setFilterType('all')
-      setFilterSub('')
+      patch({ deckScope: '', filterType: 'all', filterSub: '' })
     } else {
       // 知识点 / 掌握程度：在当前题库范围内叠加，deckScope 保持不变
-      setFilterType(type)
-      setFilterSub(sub)
+      patch({ filterType: type, filterSub: sub })
     }
-  }, [])
+  }, [patch])
 
   // 确认删除题库：复用已实现的 REMOVE_DOCUMENT（移除卡片+DocMeta+学习状态+写墓碑）
   const confirmDelete = useCallback(() => {
     if (!deleteTarget) return
     dispatch({ type: 'REMOVE_DOCUMENT', docId: deleteTarget.docId })
     // 删除的正是当前范围题库 → 全部重置，避免筛到空题库
-    setDeckScope('')
-    setFilterType('all')
-    setFilterSub('')
+    patch({ deckScope: '', filterType: 'all', filterSub: '' })
     setDeleteTarget(null)
-  }, [deleteTarget, dispatch])
+  }, [deleteTarget, dispatch, patch])
 
   return (
     <div className="library-page">
@@ -136,7 +142,7 @@ export default function LibraryPage({ onPreviewCard }: Props) {
         </div>
 
         <button className="lib-upload-btn" onClick={() => setUploadOpen(true)}>
-          上传文档
+          上传题库
         </button>
 
         {/* 顶部飘浮小装饰 */}

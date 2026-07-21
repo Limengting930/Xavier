@@ -5,7 +5,7 @@
 // 复用 kimi.ts 的 chatOnce（非流式）+ API 常量，禁止另起 fetch（CLAUDE.md 铁律）。
 
 import type { Question } from '../types'
-import { DOC_CAT_MAX, DOC_CAT_FALLBACK, ORPHAN_CAT_MERGE_THRESHOLD, GEN_CONCURRENCY } from '../types'
+import { DOC_CAT_MAX, DOC_CAT_FALLBACK, ORPHAN_CAT_MERGE_THRESHOLD, GEN_CONCURRENCY, MIN_CHUNK_CONTENT_CHARS } from '../types'
 import { chatOnce, type Message } from './kimi'
 import type { Chunk } from './chunker'
 
@@ -172,11 +172,17 @@ export async function generateCards(
       '   - diff: number（难度 1~3）',
       '   - cat: string（必须取自上面的分类清单）',
       '5. 只输出 JSON 数组本身，不要解释、不要代码围栏。文本内容太少无法出卡时输出 []。',
+      '6. 【重要防幻觉】只有真正讲解了知识内容的文本才出卡。若给定文本只是标题、目录、关键词或章节名而没有实质讲解内容，绝对不要根据标题自行补充你已知的知识来编造问答，此时必须返回 []。',
     ].join('\n'),
   }
 
   // 处理单块：调 LLM → 容错解析 → 净化。返回该块产出的卡片，失败抛错由上层计数。
   const processChunk = async (c: Chunk): Promise<Omit<Question, 'id'>[]> => {
+    // 块级正文校验：内容去空白后过少（只有标题/关键词、无正文）→ 跳过不喂 AI，
+    // 从源头杜绝"AI 就着标题编问答"的幻觉。不算失败块（不是解析失败）。
+    if (c.content.replace(/\s/g, '').length < MIN_CHUNK_CONTENT_CHARS) {
+      return []
+    }
     const user: Message = {
       role: 'user',
       content: `【文档：${docName}】\n【章节：${c.title || '未命名'}】\n${c.content}`,

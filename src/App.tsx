@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppProvider, useApp, todayLocal, isDueByLocalDate } from './store'
 import { exchangeCode, verifySession, redirectToLogin, loadQuestions, loadFromCloud } from './api'
 import type { Question } from './types'
 import { BUILTIN_DECK_ID, BUILTIN_DECK_NAME } from './types'
 import HomePage from './components/HomePage'
-import LibraryPage from './components/LibraryPage'
+import LibraryPage, { type LibFilterState } from './components/LibraryPage'
 import StatsPage from './components/StatsPage'
 import MePage from './components/MePage'
 import LearnPage from './components/LearnPage'
@@ -29,7 +29,7 @@ const GOAL_DATE_KEY = 'beile_goal_date'
 const LEARN_DECK_KEY = 'beile_learn_deck'
 
 function AppInner() {
-  const { state, dispatch, allCards, getCardState, getTodayProgress } = useApp()
+  const { state, dispatch, allCards, getCardState, getTodayProgress, pullFromCloud } = useApp()
   const [page, setPage] = useState<TabKey>('home')
   const [goalPickerOpen, setGoalPickerOpen] = useState(false)
   const [lockedAlert, setLockedAlert] = useState(false)
@@ -40,6 +40,11 @@ function AppInner() {
   // 今日学习题库范围（'' = 全部题库）
   const [learnDeckScope, setLearnDeckScope] = useState<string>(() => localStorage.getItem(LEARN_DECK_KEY) || '')
   const [deckPickerOpen, setDeckPickerOpen] = useState(false)
+  // 题库页筛选状态提升到 App 层：切换底部导航（LibraryPage 卸载/重挂）后筛选不重置，
+  // 只有刷新页面（整个 App 重建）才回到默认。
+  const [libFilter, setLibFilter] = useState<LibFilterState>({
+    search: '', filterType: 'all', filterSub: '', onlyFav: false, deckScope: '',
+  })
   const [learnState, setLearnState] = useState<{
     active: boolean
     queue: Question[]
@@ -200,6 +205,31 @@ function AppInner() {
     setLearnState(null)
   }, [])
 
+  // ── 方案A：多端同步·主动拉取云端更新 ──
+  // 让"已打开着的设备"也能感知其他端的学习/题库变更（而非只在登录时拉一次）。
+  // 触发时机：标签页重新可见、切回首页。带 15s 节流，避免频繁切换狂发请求。
+  const lastPullRef = useRef(0)
+  const doPull = useCallback((force = false) => {
+    if (!state.user) return
+    if (document.visibilityState !== 'visible') return
+    const now = Date.now()
+    if (!force && now - lastPullRef.current < 15000) return
+    lastPullRef.current = now
+    pullFromCloud()
+  }, [state.user, pullFromCloud])
+
+  // 标签页重新可见时拉取
+  useEffect(() => {
+    const onVisible = () => doPull()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [doPull])
+
+  // 切回首页时拉取（学习/退出学习后回首页能看到别端进度）
+  useEffect(() => {
+    if (page === 'home') doPull()
+  }, [page, doPull])
+
   // 当前今日学习题库范围内的卡片总数（供 GoalPicker 判断目标是否超过题库题数）
   const scopeCardCount = useCallback((scope: string): number => {
     const cards = allCards()
@@ -304,6 +334,8 @@ function AppInner() {
       {page === 'library' && (
         <LibraryPage
           onPreviewCard={(id, filteredIds) => startLearn('single', id, filteredIds)}
+          filter={libFilter}
+          onFilterChange={setLibFilter}
         />
       )}
       {page === 'stats' && <StatsPage />}

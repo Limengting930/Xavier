@@ -58,7 +58,7 @@ export default function StatsPage() {
       })
       return {
         key,
-        title: key === BUILTIN ? '内置题库（AI 面试）' : docNameOf(key),
+        title: key === BUILTIN ? '内置题库' : docNameOf(key),
         total: list.length,
         mastered,
         rate,

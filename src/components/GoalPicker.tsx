@@ -56,7 +56,7 @@ export default function GoalPicker({ initialValue, onConfirm, onCancel, locked =
     }
     // 需求3：目标超过当前题库题数 → 先提醒一次；用户再次确认同一值即放行（不硬阻断）
     if (typeof deckCardCount === 'number' && val > deckCardCount && warnedRef.current !== val) {
-      setErrMsg(`当前题库仅 ${deckCardCount} 题，目标已超过。如仍要设置，请再次点击确认`)
+      setErrMsg(`当前题库仅 ${deckCardCount} 题，目标已超过。请重新设置`)
       warnedRef.current = val
       return
     }

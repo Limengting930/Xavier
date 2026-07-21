@@ -38,7 +38,7 @@ const ALL_ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: 'streak3', Icon: IconFlame, name: '三日不辍', desc: '连续学习3天', bg: '#FFF0F0', color: '#F27166', emoji: '🔥' },
   { id: 'streak7', Icon: IconLightning, name: '一周坚持', desc: '连续学习7天', bg: '#FFF8DE', color: '#E8A83C' },
   { id: 'streak10', Icon: IconTrophy, name: '十全十美', desc: '连续学习10天', bg: '#F4F0FF', color: '#B69EFA' },
-  { id: 'master30', Icon: IconCrown, name: '三十而立', desc: '掌握30道题', bg: '#FFF6E5', color: '#F2B94A' },
+  { id: 'master30', Icon: IconCrown, name: '一库在握', desc: '掌握一个题库', bg: '#FFF6E5', color: '#F2B94A' },
   { id: 'masterAll', Icon: IconShieldStar, name: '通关副本', desc: '掌握所有题目', bg: '#EEF2FF', color: '#8A8EF2' },
 ]
 
