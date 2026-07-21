@@ -1,0 +1,45 @@
+src/App.tsx
+  s_456cc595e56d55::t_8c46117edc14db 43,46,48-49
+  s_456cc595e56d55::t_943aa27f500777 341-342
+docs/公网化与RAG迁移方案.md
+  s_a32038df921957::t_6c183258b89d89 1-312
+src/store.tsx
+  s_456cc595e56d55::t_2f60e7b8dc8e9a 303
+  s_456cc595e56d55::t_5d1a2607a86f36 388-402
+src/components/LibraryPage.tsx
+  s_456cc595e56d55::t_a0cfb752ad5a42 4-5,11,23-25,28-40,42,53-56,60-89,91-100,102,145,147-148,151-156,161,163-181,183-204,206-260,262-320,323,340,350,356,376
+  s_456cc595e56d55::t_c982f1c8b553a9 322
+  s_456cc595e56d55::t_69fce1ac3ce8c4 321
+docs/公网化迁移方案-国内无RAG.md
+  s_a32038df921957::t_b54d2c1c0343b6 1-242
+src/components/library/LibFilterMenu.tsx
+  s_456cc595e56d55::t_18570c87b7877f 41
+  s_456cc595e56d55::t_e18a1556488281 20-21,26-27
+  s_456cc595e56d55::t_35db5287214147 87-88
+  s_456cc595e56d55::t_c78404948ad877 125-135,137-156
+  s_456cc595e56d55::t_7295db38dd3eb3 46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "7bdef1f7784adb8a36ad02a259f5a91f8db85f76",
+  "prompts": {},
+  "sessions": {
+    "s_456cc595e56d55": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_08189ea95ffepKdld8Ogt1dtBT",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    },
+    "s_a32038df921957": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_081c9d011ffe5hSNarC2p63bIA",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    }
+  }
+}
