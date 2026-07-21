@@ -1,0 +1,105 @@
+src/types.ts
+  s_456cc595e56d55::t_b116ef0d4d71da 61-62
+  s_456cc595e56d55::t_8d0f40c76c0160 86
+  s_456cc595e56d55::t_821e7e8546b849 123-124
+  s_456cc595e56d55::t_a2bded97dea823 121-122
+src/components/LibraryPage.tsx
+  s_456cc595e56d55::t_d26f8f543d8bd0 10-18,21-22,25,27-35
+  s_456cc595e56d55::t_833f3f748c3b2a 114,117,120,122,129,131
+src/store.tsx
+  s_456cc595e56d55::t_8bf251460091e4 495-500
+  s_456cc595e56d55::t_131c6e765dfc04 213-219
+  s_456cc595e56d55::t_2506f4a995a99b 364
+  s_456cc595e56d55::t_118a28e9b7d66c 3
+  s_456cc595e56d55::t_43204898416456 95-130
+  s_456cc595e56d55::t_5a5fc95111ed96 165-169
+  s_456cc595e56d55::t_441ae23dc8369f 528
+  s_456cc595e56d55::t_1fcb50f24c3d7a 301
+  s_456cc595e56d55::t_0c02fc1b5bd486 675-684
+  s_456cc595e56d55::t_8103c17fe4a296 693
+src/utils/docParser.ts
+  s_456cc595e56d55::t_e73599091d75f6 214-244
+  s_456cc595e56d55::t_714ad65150624a 104,127,144
+  s_456cc595e56d55::t_0041ef215818aa 81,84,93-95,97-98
+  s_456cc595e56d55::t_30fedb4b750959 132,137-140,142-143
+  s_456cc595e56d55::t_1f1ffe27b0cbb3 82,85-89,91-92
+  s_456cc595e56d55::t_e4b7279992df5a 76,83,96
+  s_456cc595e56d55::t_a3fda7e131cfd4 90
+  s_456cc595e56d55::t_1f7f3bdb8dff32 12-43
+  s_456cc595e56d55::t_68d52dbed4cbbd 112-124
+  s_456cc595e56d55::t_6aea8e6a760ee0 157,160,172-174,181,183-185
+docs/filetoCard.md
+  s_456cc595e56d55::t_7f36bf94fcee71 244
+  s_456cc595e56d55::t_2f20925ce8640e 113-125
+  s_456cc595e56d55::t_3797209ebded33 136
+  s_456cc595e56d55::t_9baf0fe667b03c 205-206
+  s_456cc595e56d55::t_5e6dfdc71b4596 110-112
+  s_456cc595e56d55::t_646a3d740ff90b 126-128,133-135
+  s_456cc595e56d55::t_d6ae413d7856a2 137-139,202-204
+  s_456cc595e56d55::t_c45c266a32ad9c 207-209,241-243
+  s_456cc595e56d55::t_8f9c3ec7730210 245
+src/utils/cardGen.ts
+  s_456cc595e56d55::t_9f656ab101bc39 8
+  s_456cc595e56d55::t_631158556d3190 175,181-185
+src/components/MePage.tsx
+  s_456cc595e56d55::t_b01f8a03d98414 41
+src/components/UploadSheet.tsx
+  s_456cc595e56d55::t_463c4adcf1c177 89-91,93,95-98,101,105-106,110-113
+  s_456cc595e56d55::t_2519632a27c4df 25
+  s_456cc595e56d55::t_a2605ce37086ee 12
+  s_456cc595e56d55::t_34b47f8c8fd62a 247-253,256,258,264
+  s_456cc595e56d55::t_7562309056f209 192,200
+  s_b9dc3b54ee4159::t_7374019633dd5c 354-356
+  s_b9dc3b54ee4159::t_7ed656d5448507 15
+  s_456cc595e56d55::t_98bd2f69c373cd 83-88
+  s_456cc595e56d55::t_50dc67c34ce5f9 220
+  s_456cc595e56d55::t_2f1cb5e5801bd8 182-183
+  s_456cc595e56d55::t_d2fd021a856356 230-246,254-255,257,259-263,265-266
+  s_456cc595e56d55::t_76c7c6fbd82102 304-316,318-319,321-333
+  s_456cc595e56d55::t_7bf0ddc566f9e3 317,320
+  s_456cc595e56d55::t_cd130b67ef1dc8 10
+  s_456cc595e56d55::t_987942ca92f6a7 268-275
+  s_456cc595e56d55::t_03ddf9be27e8ad 44
+  s_456cc595e56d55::t_7ae3d7956068ef 41-43
+  s_456cc595e56d55::t_fdd1a9dfb6c203 9
+  s_456cc595e56d55::t_62f0051a734d4a 197
+  s_456cc595e56d55::t_8376e9793223e6 346-348
+  s_456cc595e56d55::t_846a4223d0428f 56-58
+  s_456cc595e56d55::t_1d2e57466d6ef5 135
+  s_456cc595e56d55::t_571a7b4d93f400 267
+src/styles/home.css
+  s_b9dc3b54ee4159::t_0877db3700c7ee 175,183
+src/components/home/TodayCard.tsx
+  s_b9dc3b54ee4159::t_6eb872ae685d9d 52
+src/App.tsx
+  s_456cc595e56d55::t_5de10df56d7919 337-338
+  s_456cc595e56d55::t_a1159199ab8471 32
+  s_456cc595e56d55::t_e01207bac8b018 1
+  s_456cc595e56d55::t_e629ff5ce94e54 7
+  s_456cc595e56d55::t_4d698098a19692 43-47
+  s_456cc595e56d55::t_cc67a409cf7a6d 208-232
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "1a26ae1e89f00e7babb292b06540737098585636",
+  "prompts": {},
+  "sessions": {
+    "s_456cc595e56d55": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_08189ea95ffepKdld8Ogt1dtBT",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    },
+    "s_b9dc3b54ee4159": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_090b890b7ffeKvsG0RNmXLqz1v",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    }
+  }
+}
