@@ -40,11 +40,13 @@ function AppInner() {
   // 今日学习题库范围（'' = 全部题库）
   const [learnDeckScope, setLearnDeckScope] = useState<string>(() => localStorage.getItem(LEARN_DECK_KEY) || '')
   const [deckPickerOpen, setDeckPickerOpen] = useState(false)
-  // 题库页筛选状态提升到 App 层：切换底部导航（LibraryPage 卸载/重挂）后筛选不重置，
+  // 题库页筛选状态提升到 App 层：切换底部导航（LibraryPage 卸载/重挂）后不重置，
   // 只有刷新页面（整个 App 重建）才回到默认。
   const [libFilter, setLibFilter] = useState<LibFilterState>({
-    search: '', filterType: 'all', filterSub: '', onlyFav: false, deckScope: '',
+    search: '', filterType: 'all', filterSub: '', onlyFav: false,
   })
+  // 题库页两级视图：null = 题库列表；否则为当前进入的题库（docId 或内置题库 id）的题目列表
+  const [viewDeck, setViewDeck] = useState<string | null>(null)
   const [learnState, setLearnState] = useState<{
     active: boolean
     queue: Question[]
@@ -336,6 +338,8 @@ function AppInner() {
           onPreviewCard={(id, filteredIds) => startLearn('single', id, filteredIds)}
           filter={libFilter}
           onFilterChange={setLibFilter}
+          viewDeck={viewDeck}
+          onViewDeckChange={setViewDeck}
         />
       )}
       {page === 'stats' && <StatsPage />}

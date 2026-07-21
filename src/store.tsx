@@ -300,6 +300,7 @@ type Action =
   | { type: 'ADD_GENERATED_CARDS'; cards: Omit<Question, 'id'>[]; doc: DocMeta }
   | { type: 'APPEND_TO_DOCUMENT'; docId: string; cards: Omit<Question, 'id'>[]; categories: string[]; hash: string; fingerprint?: string }
   | { type: 'REMOVE_DOCUMENT'; docId: string }
+  | { type: 'RENAME_DOCUMENT'; docId: string; name: string }
   | { type: 'MERGE_CLOUD'; cloud: NonNullable<Awaited<ReturnType<typeof loadFromCloud>>> }
 
 function reducer(state: AppState, action: Action): AppState {
@@ -381,6 +382,21 @@ function reducer(state: AppState, action: Action): AppState {
       // 记入墓碑：防止 MERGE_CLOUD 把已删题库从云端旧数据并集合并回来
       const deletedDocs = [...new Set([...(state.store.deletedDocs || []), docId])]
       const store = { ...state.store, custom, documents, cards, deletedDocs }
+      saveLocal(store)
+      return { ...state, store }
+    }
+    case 'RENAME_DOCUMENT': {
+      const { docId, name } = action
+      const newName = name.trim()
+      if (!newName) return state
+      const documents = (state.store.documents || []).map(d =>
+        d.docId === docId ? { ...d, name: newName } : d,
+      )
+      // 同步更新该题库下卡片里冗余存的 source.docName
+      const custom = state.store.custom.map(c =>
+        c.source?.docId === docId ? { ...c, source: { ...c.source, docName: newName } } : c,
+      )
+      const store = { ...state.store, documents, custom }
       saveLocal(store)
       return { ...state, store }
     }

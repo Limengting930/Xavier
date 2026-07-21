@@ -122,7 +122,6 @@
   border-radius: 28px;
   padding: 24px 20px;
   box-shadow: var(--shadow-soft);
-  margin-bottom: 24px;
 }
 .stats-cat-header {
   display: flex;

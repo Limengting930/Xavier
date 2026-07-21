@@ -6,7 +6,6 @@ import {
   IconNotebook,
   IconStar,
   HandUnderline,
-  PlantIllustration,
   Sparkle,
   HeartDoodle,
 } from './icons'
@@ -111,38 +110,6 @@ export default function StatsPage() {
           <div className="label">总学习题数</div>
         </div>
       </div>
-
-      {/* 中间掌握率卡片：展示「内置题库」掌握率（核心指标，不被上传文档稀释）。
-          无内置题库时退回展示第一个分区。 */}
-      {(() => {
-        const primary = sections.find(s => s.key === BUILTIN) || sections[0]
-        const primaryRate = primary?.rate ?? 0
-        const primaryLabel = primary
-          ? (primary.key === BUILTIN ? '内置题库掌握率' : `${primary.title} 掌握率`)
-          : '掌握率'
-        return (
-          <div className="stats-mastery-card">
-            <div className="value">{primaryRate}%</div>
-            <div className="label">{primaryLabel}</div>
-
-            {/* 左侧小装饰 */}
-            <div className="plant-decor-left">
-              <svg width="24" height="40" viewBox="0 0 24 40" fill="none">
-                <path d="M12 40 C12 30 6 24 4 16 C12 20 16 28 12 40" fill="#B7D9AE" opacity="0.8" />
-                <path d="M12 34 C18 28 22 20 20 12 C14 16 12 24 12 34" fill="#A5CE9D" opacity="0.8" />
-                <path d="M12 40 L12 20" stroke="#7BB077" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-              </svg>
-            </div>
-            <IconStar size={12} color="#F0A5B0" style={{ position: 'absolute', left: 40, top: 30, opacity: 0.8 }} />
-            <IconStar size={10} color="#E8A83C" style={{ position: 'absolute', right: 80, bottom: 20, opacity: 0.7 }} />
-
-            {/* 右侧盆栽 */}
-            <div className="plant-decor-right">
-              <PlantIllustration size={80} />
-            </div>
-          </div>
-        )
-      })()}
 
       {/* 底部：按来源分区展示掌握度（内置题库 + 每个上传文档） */}
       {sections.map(sec => (

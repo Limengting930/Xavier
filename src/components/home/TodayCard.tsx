@@ -112,7 +112,7 @@ export default function TodayCard({
         role="button"
         aria-label="点击兔子"
       >
-        <BunnyImage size={96} />
+        <BunnyImage size={86} />
         <SpeechBubble
           text="搭档加油！"
           tick={bunnyTick}

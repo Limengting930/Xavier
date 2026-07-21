@@ -16,7 +16,7 @@
   align-items: flex-start;
   justify-content: flex-start;
   gap: 8px;
-  padding: 4px 4px 12px;
+  padding: 4px 4px 5px;
 }
 .lib-title-wrap {
   position: relative;
@@ -51,7 +51,7 @@
   gap: 10px;
   background: var(--card);
   border-radius: 20px;
-  padding: 14px 18px;
+  padding: 10px 18px;
   margin: 8px 0 14px;
   box-shadow: var(--shadow-soft);
 }
@@ -88,7 +88,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .lib-select {
   position: relative;
@@ -130,7 +130,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--sub);
   cursor: pointer;
@@ -454,3 +454,122 @@
   color: #fff;
 }
 .goal-btn.danger:active { filter: brightness(0.94); }
+
+/* ============================================================
+ * 题库列表（两级视图·第一级）· 追加
+ * ============================================================ */
+.deck-item {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: transform .12s var(--ease-out), box-shadow .18s;
+}
+.deck-item:active { transform: scale(.99); }
+.deck-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.deck-item-icon { flex-shrink: 0; display: inline-flex; }
+.deck-item-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deck-item-rename {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+}
+.deck-item-rename:active { background: var(--bg); }
+
+.deck-item-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.deck-item-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--divider);
+  overflow: hidden;
+}
+.deck-item-bar-fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  transition: width .3s var(--ease-out);
+}
+.deck-item-frac {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sub);
+  font-variant-numeric: tabular-nums;
+}
+.deck-item-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.deck-item-time { font-size: 12px; color: var(--sub); }
+.deck-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.deck-act-btn {
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--accent);
+  background: var(--card);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s var(--ease-out);
+}
+.deck-act-btn:active { background: var(--accent); color: #fff; }
+.deck-act-btn.danger { border-color: var(--pink); color: var(--pink); }
+.deck-act-btn.danger:active { background: var(--pink); color: #fff; }
+
+/* 第二级题目列表头部：返回按钮 + 题库名 + 题数 */
+.lib-header-sub { align-items: center; gap: 8px; }
+.lib-back-btn {
+  flex-shrink: 0;
+  width: 35px; height: 35px;
+  border: none;
+  background: var(--card);
+  border-radius: 50%;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.lib-back-btn:active { background: var(--bg); }
+.lib-title-deck {
+  font-size: 20px;
+  max-width: 60vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lib-sub-count {
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sub);
+  align-self: center;
+}

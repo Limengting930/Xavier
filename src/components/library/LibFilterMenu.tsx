@@ -17,14 +17,14 @@ export interface SubOption { v: string; l: string }
 interface Props {
   filterType: FilterType
   filterSub: string
-  /** 当前题库范围 docId（'' = 全部题库）。与 filterType 解耦，驱动「题库」项高亮 */
-  deckScope: string
+  /** 当前题库范围 docId（'' = 全部题库）。与 filterType 解耦，驱动「题库」项高亮。可选 */
+  deckScope?: string
   /** 知识点全集，用于二级展开 */
   catOptions: SubOption[]
   /** 掌握程度全集，用于二级展开 */
   statusOptions: SubOption[]
-  /** 题库全集，用于二级展开 */
-  deckOptions: SubOption[]
+  /** 题库全集，用于二级展开。不传或为空时不显示「题库」维度 */
+  deckOptions?: SubOption[]
   onChange: (type: FilterType, sub: string) => void
 }
 
@@ -38,12 +38,12 @@ interface Props {
  * - 二级：点"知识点"或"掌握程度"后展开子列表（在同一面板内展开）
  * - 点击面板外部自动关闭
  */
-export default function LibFilterMenu({ filterType, filterSub, deckScope, catOptions, statusOptions, deckOptions, onChange }: Props) {
+export default function LibFilterMenu({ filterType, filterSub, deckScope = '', catOptions, statusOptions, deckOptions, onChange }: Props) {
   const [open, setOpen] = useState(false)
   const [expand, setExpand] = useState<FilterType | null>(null)
   const wrapRef = useRef<HTMLDivElement | null>(null)
 
-  const deckLabel = deckScope ? (deckOptions.find(o => o.v === deckScope)?.l || '题库') : ''
+  const deckLabel = deckScope ? (deckOptions?.find(o => o.v === deckScope)?.l || '题库') : ''
   const label =
     filterType === 'cat'
       ? (catOptions.find(o => o.v === filterSub)?.l || '知识点')
@@ -84,7 +84,8 @@ export default function LibFilterMenu({ filterType, filterSub, deckScope, catOpt
   // 二级候选（直接用外部传入的两组全集）
   const catOptionsForExpand = expand === 'cat' ? catOptions : []
   const statusOptionsForExpand = expand === 'status' ? statusOptions : []
-  const deckOptionsForExpand = expand === 'deck' ? deckOptions : []
+  const deckOptionsForExpand = expand === 'deck' ? (deckOptions ?? []) : []
+  const showDeck = !!deckOptions && deckOptions.length > 0
 
   return (
     <div className="lib-fm-wrap" ref={wrapRef}>
@@ -121,34 +122,38 @@ export default function LibFilterMenu({ filterType, filterSub, deckScope, catOpt
             onClick={() => handlePickMain('all')}
           />
 
-          <MenuItem
-            active={!!deckScope}
-            icon={<IconBookOpen size={20} color="#B69EFA" />}
-            label="题库"
-            trailing={deckScope
-              ? <IconCheck size={18} color="var(--accent)" />
-              : <IconChevronRight size={16} color="var(--sub)" />}
-            onClick={() => handlePickMain('deck')}
-          />
+          {showDeck && (
+            <>
+              <MenuItem
+                active={!!deckScope}
+                icon={<IconBookOpen size={20} color="#B69EFA" />}
+                label="题库"
+                trailing={deckScope
+                  ? <IconCheck size={18} color="var(--accent)" />
+                  : <IconChevronRight size={16} color="var(--sub)" />}
+                onClick={() => handlePickMain('deck')}
+              />
 
-          {/* 题库二级 */}
-          {expand === 'deck' && deckOptionsForExpand.length > 0 && (
-            <div className="lib-fm-sub">
-              {deckOptionsForExpand.map(o => (
-                <button
-                  key={o.v}
-                  type="button"
-                  className={`lib-fm-sub-item${deckScope === o.v ? ' is-active' : ''}`}
-                  onClick={() => handlePickSub('deck', o.v)}
-                >
-                  <span className="lib-fm-sub-icon">
-                    <IconBookOpen size={14} color="var(--accent)" />
-                  </span>
-                  <span className="lib-fm-sub-label">{o.l}</span>
-                  {deckScope === o.v && <IconCheck size={16} color="var(--accent)" />}
-                </button>
-              ))}
-            </div>
+              {/* 题库二级 */}
+              {expand === 'deck' && deckOptionsForExpand.length > 0 && (
+                <div className="lib-fm-sub">
+                  {deckOptionsForExpand.map(o => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      className={`lib-fm-sub-item${deckScope === o.v ? ' is-active' : ''}`}
+                      onClick={() => handlePickSub('deck', o.v)}
+                    >
+                      <span className="lib-fm-sub-icon">
+                        <IconBookOpen size={14} color="var(--accent)" />
+                      </span>
+                      <span className="lib-fm-sub-label">{o.l}</span>
+                      {deckScope === o.v && <IconCheck size={16} color="var(--accent)" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           <MenuItem
