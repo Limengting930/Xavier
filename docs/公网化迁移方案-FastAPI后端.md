@@ -3,8 +3,8 @@
 > 目标：把当前**内网 Builder BaaS、隐式单用户**的应用，迁移为**面向国内外部用户、公网可访问、多用户数据隔离、密钥安全**的正式产品。
 >
 > 本方案的技术选型（已定）：
-> - 后端：**Python + FastAPI**（自建）
-> - 数据库：**腾讯云 PostgreSQL**（云托管）
+> - 后端：**Python + FastAPI**（自建，代码位于 `backend/`）
+> - 数据库：**PostgreSQL**（开发期用**本地 Docker**、生产用**腾讯云**，代码零差异，只换连接串）
 > - 登录：**手机号 + 短信验证码（OTP）**
 > - 云厂商：**腾讯云**
 > - 前端载体：**独立 H5**（现有 React SPA）
@@ -12,6 +12,51 @@
 >
 > ⚠️ 阅读对象：**只熟悉前端、后端与数据库零基础**。因此后端 / 数据库 / 云操作部分写得非常详细，
 > 概念都用前端类比解释。前端改造部分假设你已熟悉，写得相对简洁。
+
+---
+
+## 实施进度（本文档动态维护）
+
+> **第一期「后端 + 认证 + 多用户数据隔离」的代码已全部落地并本地跑通。** 以下为当前真实状态：
+
+### 已完成 ✅
+- **后端 `backend/`（FastAPI）已建**：
+  - `app/main.py`（CORS + 路由 + 启动自动建表）、`config.py`、`database.py`、`models.py`、`schemas.py`、`auth.py`（JWT）、`deps.py`、`sms.py`
+  - 路由：`routers/auth.py`（手机 OTP）、`questions.py`、`progress.py`
+  - `scripts/import_questions.py`（题库导入）、`Dockerfile`、`requirements.txt`、`.env.example`、`README.md`
+- **前端已改造**：`api.ts` 重写为调 FastAPI + JWT（`loadQuestions/loadFromCloud/syncToCloud` 签名保持不变，`store` 业务逻辑未动）；
+  新增 `components/LoginPage.tsx` + `styles/login.css`；`App.tsx` 认证改为「检查 JWT → 有则进主界面，无则显示登录页」。
+- **开发环境跑通**：本地 Docker PostgreSQL + `DEV_FAKE_SMS=true`（验证码固定 `000000`，打印到后端终端），
+  无需云数据库、无需真短信即可完成注册登录与全部功能调试。
+
+### 开发环境决策（与最初方案的差异）
+- **数据库开发期改用本地 Docker，而非云库**：一条命令起 PostgreSQL，零费用、断网可用、不污染系统。
+  上线再把 `.env` 的 `DATABASE_URL` 换成腾讯云地址即可，**代码不变**。
+- **Python 版本坑**：必须用 **3.11 / 3.12**，**不能用 3.14**（pydantic-core 依赖的 PyO3 尚不支持 3.14，会编译失败）。
+
+### 待办（第一期收尾 + 第二期）
+- [ ] 导入真实题库数据到 `questions` 表
+- [ ] 两账号交叉验证多用户隔离
+- [ ] （上线前）开通腾讯云短信、审核签名/模板，切 `DEV_FAKE_SMS=false`
+- [ ] （上线前）域名 ICP 备案、HTTPS
+- [ ] 第二期：AI 代理云函数/接口（藏 Kimi key）+ 公网硬化
+
+### 一分钟本地跑通（当前可用）
+```bash
+# 1) 起本地数据库（装了 Docker Desktop）
+docker run -d --name beile-pg \
+  -e POSTGRES_USER=beile -e POSTGRES_PASSWORD=beile123 -e POSTGRES_DB=beile_dev \
+  -p 5432:5432 postgres:16
+# 2) 后端
+cd backend && python3.12 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # 填 DATABASE_URL=本地库、JWT_SECRET；DEV_FAKE_SMS 保持 true
+uvicorn app.main:app --reload --port 8000   # http://localhost:8000/docs
+# 3) 前端（根目录）
+echo "VITE_API_BASE=http://localhost:8000" > .env.local
+npm install && npm run dev
+# 登录：输手机号 → 获取验证码 → 验证码看后端终端打印的 000000 → 登录
+```
 
 ---
 
@@ -88,8 +133,12 @@
 ## 第 3 章 · 环境与工具准备（后端零基础从这开始）
 
 ### 3.1 安装 Python
-- 去 python.org 下载 **Python 3.11+**，安装时勾选「Add to PATH」。
-- 验证：终端输入 `python --version`（macOS 可能是 `python3 --version`），能显示版本号即成功。
+- 需要 **Python 3.11 或 3.12**。
+- ⚠️ **不要用 Python 3.14**：`pydantic-core`（pydantic 底层，用 Rust 编译）依赖的 PyO3 目前**最高只支持 3.13**，
+  用 3.14 会在 `pip install` 时编译失败（报 `the configured Python interpreter version (3.14) is newer than PyO3's maximum supported version`）。
+- macOS 用 Homebrew 装 3.12：`brew install python@3.12`，之后用完整路径 `/opt/homebrew/bin/python3.12` 建虚拟环境最稳。
+- 验证：`python3.12 --version` 显示 `Python 3.12.x` 即可。
+- 若之前误用 3.14 建过虚拟环境导致装依赖失败：`deactivate` → `rm -rf venv` → 用 3.12 重建（见 3.2）。
 
 ### 3.2 理解「虚拟环境」（重要，类比 node_modules）
 Python 项目的依赖要装在**项目专属的虚拟环境**里（类似前端的 `node_modules`，避免污染全局）：
@@ -143,9 +192,30 @@ backend/
 
 ---
 
-## 第 4 章 · 腾讯云 PostgreSQL 从零开通（手把手）
+## 第 4 章 · 数据库准备
 
-### 4.1 开通云数据库
+> **开发期推荐用本地 Docker 数据库（4.0），零费用、断网可用；上线再用腾讯云（4.1+）。**
+> 两者都是 PostgreSQL，后端代码完全一样，**只换 `.env` 的 `DATABASE_URL`**。
+
+### 4.0 本地 Docker PostgreSQL（开发首选）✅ 已采用
+前提：安装 **Docker Desktop**（docker.com 下载，按芯片选 Apple/Intel 版）。
+
+```bash
+# 起一个本地 PostgreSQL（首次会下载镜像）
+docker run -d --name beile-pg \
+  -e POSTGRES_USER=beile -e POSTGRES_PASSWORD=beile123 -e POSTGRES_DB=beile_dev \
+  -p 5432:5432 postgres:16
+
+# 常用：docker start beile-pg / docker stop beile-pg / docker rm -f beile-pg（删数据重来）
+```
+对应 `.env`：
+```
+DATABASE_URL=postgresql+asyncpg://beile:beile123@localhost:5432/beile_dev
+```
+> 数据存本地容器，删容器即清空（开发够用）。想持久化加 `-v beile-pgdata:/var/lib/postgresql/data`。
+> 本地库只有本机能连；要在手机真机 / 多设备联调后端时才需要云库。
+
+### 4.1 开通腾讯云云数据库（上线用；也可用于开发）
 1. 注册 / 登录 [腾讯云控制台](https://console.cloud.tencent.com)。
 2. 搜索「**云数据库 PostgreSQL**」→ 点「新建」。
 3. 选**按量计费**（开发期便宜、随时销毁）、最小规格（如 1核2G）、选**离你近的地域**（如广州/上海）。
@@ -178,7 +248,8 @@ DATABASE_URL=postgresql+asyncpg://root:你的密码@外网host:5432/beile_dev
 
 ## 第 5 章 · 数据库表结构设计
 
-第一期**沿用 JSON blob**（和现有 `user_progress` 一致，前端几乎不动）。PostgreSQL 用 `jsonb` 类型存 JSON，很合适。
+第一期**沿用 JSON blob**（和现有 `user_progress` 一致，前端几乎不动）。各 `*_json` 字段用 **TEXT 存 JSON 字符串**，
+与前端「`JSON.parse` 口径」完全一致，API 原样收发字符串、前端零改动（将来需按内容查询再迁 `jsonb`）。
 
 ### 5.1 建表 SQL（在 DBeaver 里对 `beile_dev` 执行；正式用 alembic 迁移管理）
 
@@ -206,14 +277,17 @@ CREATE TABLE questions (
   sort_order  INT
 );
 
--- 用户学习进度（每用户一条，外键隔离）
+-- 用户学习进度（每用户一条，按 user_id 隔离）
+-- 说明：实际由后端启动时自动建表（SQLAlchemy create_all），此 SQL 为等价参考。
+-- 各 *_json 用 TEXT 存 JSON 字符串（与前端「JSON.parse 口径」一致，API 原样收发，前端零改动）。
 CREATE TABLE user_progress (
-  user_id            BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, -- 一人一行
-  cards_json         JSONB DEFAULT '{}',
-  daily_json         JSONB DEFAULT '{}',
-  custom_json        JSONB DEFAULT '[]',
-  documents_json     JSONB DEFAULT '[]',
-  deleted_docs_json  JSONB DEFAULT '[]',      -- 你后来加的墓碑字段，别漏
+  user_id            BIGINT PRIMARY KEY,          -- 一人一行（= users.id）
+  cards_json         TEXT DEFAULT '{}',
+  daily_json         TEXT DEFAULT '{}',
+  custom_json        TEXT DEFAULT '[]',
+  documents_json     TEXT DEFAULT '[]',
+  deleted_docs_json  TEXT DEFAULT '[]',           -- 题库删除墓碑
+  achievements_json  TEXT DEFAULT '{}',           -- 成就
   mode               VARCHAR(20) DEFAULT 'flashcard',
   updated_at         TIMESTAMPTZ DEFAULT now()
 );
@@ -231,7 +305,7 @@ CREATE TABLE otp_codes (
 - **数据隔离**：`user_progress.user_id` 是主键且外键关联 `users`，**一个用户只有一行**。
   后端所有进度操作都强制带 `WHERE user_id = 当前登录用户`，从根上杜绝串号。
 - **`keywords/interview` 仍存 JSON 字符串**：保持前端 `safeJson`（`api.ts` 现有解析）口径不变，前端零改动。
-- **JSON blob 不拆表**：`cards/daily/custom/documents` 继续整块存 `jsonb`，前端 `MERGE_CLOUD`/同步逻辑不动。
+- **JSON blob 不拆表**：`cards/daily/custom/documents` 继续整块存 **TEXT（JSON 字符串）**，前端 `MERGE_CLOUD`/同步逻辑不动。
   卡片量破数千再考虑拆表（现软上限 2000）。
 
 ---
@@ -239,6 +313,9 @@ CREATE TABLE otp_codes (
 ## 第 6 章 · 手机 OTP 登录（腾讯云短信 + 后端流程）
 
 > 手机 OTP = 输手机号 → 收短信验证码 → 输码登录。是国内 C 端最主流方式。
+>
+> **开发期可跳过腾讯云短信开通**：`.env` 里 `DEV_FAKE_SMS=true`（已实现），不真发短信，
+> 验证码**固定 `000000`** 并打印到后端终端，即可完整调试登录。仅**上线前**才需开通短信、审核签名/模板、切 `false`。
 
 ### 6.1 腾讯云短信开通（有审核周期，尽早办）
 1. 控制台搜「**短信 SMS**」→ 开通。
@@ -312,6 +389,7 @@ CREATE TABLE otp_codes (
   "custom_json": "[...]",
   "documents_json": "[...]",
   "deleted_docs_json": "[...]",
+  "achievements_json": "{...}",
   "mode": "flashcard"
 }
 ```
