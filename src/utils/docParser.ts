@@ -9,11 +9,12 @@
 
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 
-// ── polyfill：Uint8Array.prototype.toHex ──
-// pdfjs-dist 6.x 内部使用了很新的 TC39 提案 API `Uint8Array.prototype.toHex`，
-// 部分浏览器 / WebView 尚未实现，会抛 "a.toHex is not a function"。这里补上标准语义实现。
+// ── polyfill：为旧浏览器 / 移动端 WebView 补齐 pdfjs-dist 6.x 用到的较新 JS API ──
+// pdfjs v6 内部大量使用 Promise.withResolvers（27 处）、Uint8Array.prototype.toHex、
+// Array.prototype.at/findLast、Object.hasOwn 等新 API。PC 新版浏览器有，但手机端旧
+// WebView（iOS < 17.4、老 Android）缺失，会抛 "undefined is not a function"。
 // 必须在（主线程）加载/运行 pdfjs 之前注入。
-function installUint8ArrayHexPolyfill() {
+function installLegacyPolyfills() {
   const proto = Uint8Array.prototype as any
   if (typeof proto.toHex !== 'function') {
     proto.toHex = function toHex(this: Uint8Array): string {
@@ -37,6 +38,56 @@ function installUint8ArrayHexPolyfill() {
       const len = Math.min(this.length, clean.length >> 1)
       for (let i = 0; i < len; i++) this[i] = parseInt(clean.substr(i * 2, 2), 16)
       return { read: len * 2, written: len }
+    }
+  }
+
+  // Promise.withResolvers（pdfjs v6 重度使用；iOS < 17.4 / 老 WebView 缺失）
+  const P = Promise as any
+  if (typeof P.withResolvers !== 'function') {
+    P.withResolvers = function withResolvers() {
+      let resolve!: (v?: unknown) => void
+      let reject!: (r?: unknown) => void
+      const promise = new Promise((res, rej) => { resolve = res as any; reject = rej })
+      return { promise, resolve, reject }
+    }
+  }
+
+  // Array.prototype.at / findLast / findLastIndex
+  const AP = Array.prototype as any
+  if (typeof AP.at !== 'function') {
+    AP.at = function at(this: any[], n: number) {
+      n = Math.trunc(n) || 0
+      if (n < 0) n += this.length
+      return n < 0 || n >= this.length ? undefined : this[n]
+    }
+  }
+  if (typeof AP.findLast !== 'function') {
+    AP.findLast = function findLast(this: any[], pred: (v: any, i: number, a: any[]) => boolean) {
+      for (let i = this.length - 1; i >= 0; i--) if (pred(this[i], i, this)) return this[i]
+      return undefined
+    }
+  }
+  if (typeof AP.findLastIndex !== 'function') {
+    AP.findLastIndex = function findLastIndex(this: any[], pred: (v: any, i: number, a: any[]) => boolean) {
+      for (let i = this.length - 1; i >= 0; i--) if (pred(this[i], i, this)) return i
+      return -1
+    }
+  }
+
+  // TypedArray.prototype.at（pdfjs 也可能对 Uint8Array 用 at）
+  if (typeof proto.at !== 'function') {
+    proto.at = function at(this: Uint8Array, n: number) {
+      n = Math.trunc(n) || 0
+      if (n < 0) n += this.length
+      return n < 0 || n >= this.length ? undefined : this[n]
+    }
+  }
+
+  // Object.hasOwn
+  const O = Object as any
+  if (typeof O.hasOwn !== 'function') {
+    O.hasOwn = function hasOwn(obj: object, key: PropertyKey) {
+      return Object.prototype.hasOwnProperty.call(obj, key)
     }
   }
 }
@@ -80,7 +131,7 @@ async function loadPdfjs(): Promise<typeof import('pdfjs-dist')> {
     pdfjsPromise = (async () => {
       try {
         // 1) 先注入 toHex polyfill（主线程）
-        installUint8ArrayHexPolyfill()
+        installLegacyPolyfills()
         const pdfjs = await import('pdfjs-dist')
         // 2) 把 worker 模块作为普通模块导入并挂到 globalThis.pdfjsWorker。
         //    pdfjs 检测到 globalThis.pdfjsWorker.WorkerMessageHandler 存在时，会走
@@ -153,6 +204,9 @@ async function parsePdf(file: File): Promise<{ text: string; pages: number; item
  * @throws 文本为空 / 解析异常时抛出可读错误
  */
 export async function parseFile(file: File): Promise<ParseResult> {
+  // 尽早注入 polyfill：覆盖手机端旧 WebView 缺失的新 API（Promise.withResolvers 等），
+  // 避免 pdfjs / 依赖库在解析时抛 "undefined is not a function"
+  installLegacyPolyfills()
   const ext = fileExt(file.name)
   console.log('[parse] 开始解析文件：', file.name, ' 扩展名=', ext, ' 大小=', file.size)
   let text = ''
