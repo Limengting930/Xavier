@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppProvider, useApp, todayLocal, isDueByLocalDate } from './store'
-import { exchangeCode, verifySession, redirectToLogin, loadQuestions, loadFromCloud } from './api'
+import { getMe, loadQuestions, loadFromCloud } from './api'
+import type { UserInfo } from './types'
 import type { Question } from './types'
 import { BUILTIN_DECK_ID, BUILTIN_DECK_NAME } from './types'
 import { preloadAssets } from './utils/preloadAssets'
@@ -11,6 +12,7 @@ import MePage from './components/MePage'
 import LearnPage from './components/LearnPage'
 import GoalPicker from './components/GoalPicker'
 import DeckPicker from './components/home/DeckPicker'
+import LoginPage from './components/LoginPage'
 import BottomNavigation, { type TabKey } from './components/home/BottomNavigation'
 import './styles/base.css'
 import './styles/home.css'
@@ -23,6 +25,7 @@ import './styles/me.css'
 import './styles/speech-bubble.css'
 import './styles/chatbot.css'
 import './styles/upload.css'
+import './styles/login.css'
 
 const GOAL_KEY = 'beile_goal'
 const GOAL_DATE_KEY = 'beile_goal_date'
@@ -56,56 +59,35 @@ function AppInner() {
     startIdx?: number
   } | null>(null)
 
-  // Auth flow
+  // 登录后加载数据（题库 + 云端进度），init 与登录成功共用
+  const loadUserData = useCallback(async () => {
+    dispatch({ type: 'SET_SYNC_STATUS', status: '🔄 同步中…' })
+    const [questions, cloudData] = await Promise.all([loadQuestions(), loadFromCloud()])
+    if (questions.length) dispatch({ type: 'SET_QUESTIONS', questions })
+    if (cloudData) dispatch({ type: 'MERGE_CLOUD', cloud: cloudData })
+    dispatch({ type: 'SET_SYNC_STATUS', status: '✅ 已同步' })
+    setTimeout(() => dispatch({ type: 'SET_SYNC_STATUS', status: '' }), 2000)
+    dispatch({ type: 'RECHECK_ACHIEVEMENTS', goal })
+  }, [dispatch, goal])
+
+  // 登录成功回调（LoginPage 调用）
+  const handleLoggedIn = useCallback(async (user: UserInfo) => {
+    dispatch({ type: 'SET_USER', user })
+    await loadUserData()
+  }, [dispatch, loadUserData])
+
+  // Auth flow：检查已存的 JWT，有效则恢复登录态并加载数据；否则显示登录页
   useEffect(() => {
     const init = async () => {
-      // Step 1: handle OAuth callback
-      const params = new URLSearchParams(location.search)
-      const code = params.get('builder_auth_code')
-      if (code) {
-        const tok = await exchangeCode(code)
-        if (tok) {
-          dispatch({ type: 'SET_USER', user: null }) // will be set after verify
-        }
-        // Clean URL
-        const cu = new URL(location.href)
-        cu.searchParams.delete('builder_auth_code')
-        cu.searchParams.delete('expires_in')
-        history.replaceState(null, '', cu.pathname + cu.search + cu.hash)
+      const user = await getMe()   // 无 token 或 token 失效返回 null
+      if (user) {
+        dispatch({ type: 'SET_USER', user })
+        await loadUserData()
       }
-
-      // Step 2: try to restore session
-      const token = localStorage.getItem(`bst_bld_258e10d749d04cc99139d1b28b1a3854`)
-      if (token) {
-        const user = await verifySession(token)
-        if (user) {
-          dispatch({ type: 'SET_USER', user })
-          dispatch({ type: 'SET_SYNC_STATUS', status: '🔄 同步中…' })
-
-          // Step 3: parallel load questions and cloud progress
-          const [questions, cloudData] = await Promise.all([
-            loadQuestions(),
-            loadFromCloud(),
-          ])
-
-          if (questions.length) dispatch({ type: 'SET_QUESTIONS', questions })
-          if (cloudData) dispatch({ type: 'MERGE_CLOUD', cloud: cloudData })
-
-          dispatch({ type: 'SET_SYNC_STATUS', status: '✅ 已同步' })
-          setTimeout(() => dispatch({ type: 'SET_SYNC_STATUS', status: '' }), 2000)
-          dispatch({ type: 'AUTH_READY' })
-          // 补检成就：为"成就系统上线之前就已达标"的历史用户补上时间戳，避免卡片空空
-          dispatch({ type: 'RECHECK_ACHIEVEMENTS', goal })
-          return
-        }
-        // token invalid
-        localStorage.removeItem(`bst_bld_258e10d749d04cc99139d1b28b1a3854`)
-      }
-
-      // Step 4: redirect to login
-      redirectToLogin()
+      dispatch({ type: 'AUTH_READY' })  // 无论登录与否，认证检查完成
     }
     init()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Build queue for learning
@@ -303,6 +285,14 @@ function AppInner() {
   const isGoalLocked = newDone > 0
 
   
+  // 认证 gate：认证检查完成且未登录 → 登录页；检查中 → 空白（避免闪现主界面）
+  if (!state.authReady && !state.user) {
+    return <div className="app-container" />
+  }
+  if (!state.user) {
+    return <LoginPage onLoggedIn={handleLoggedIn} />
+  }
+
   // If in learn mode
   if (learnState?.active) {
     return (
