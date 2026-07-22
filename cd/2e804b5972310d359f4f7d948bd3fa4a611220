@@ -1,0 +1,27 @@
+docs/公网化迁移方案-FastAPI后端.md
+  s_456cc595e56d55::t_aaf6089e9243a4 280-282,284-290
+  s_456cc595e56d55::t_c272c6e6c261a7 308
+  s_456cc595e56d55::t_27bb6f21a96c31 195-201,203-218
+  s_456cc595e56d55::t_59e1771aba9a13 251-252
+  s_456cc595e56d55::t_89b1f5111c9893 136-141
+  s_456cc595e56d55::t_7bc8df2665c09f 392
+  s_456cc595e56d55::t_1f41f3d66e1c40 6-7,18-59
+  s_456cc595e56d55::t_038c1bccf9bb48 316-318
+  s_456cc595e56d55::t_302287bb42d30b 60-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "cd2e804b5972310d359f4f7d948bd3fa4a611220",
+  "prompts": {},
+  "sessions": {
+    "s_456cc595e56d55": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_08189ea95ffepKdld8Ogt1dtBT",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    }
+  }
+}
