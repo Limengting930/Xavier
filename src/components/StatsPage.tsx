@@ -91,7 +91,7 @@ export default function StatsPage() {
           </div>
           <IconStar size={14} color="#B69EFA" style={{ position: 'absolute', top: 12, right: 12, opacity: 0.6 }} />
           <div className="value">{dayCount}</div>
-          <div className="label">学习天数</div>
+          <div className="label">累计学习天数</div>
         </div>
         <div className="stats-top-card purple">
           <div className="icon-box">
