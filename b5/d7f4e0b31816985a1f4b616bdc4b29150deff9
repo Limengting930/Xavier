@@ -1,0 +1,21 @@
+README.md
+  s_456cc595e56d55::t_b14c8ea227c56e 3,5-6,8-27
+  s_456cc595e56d55::t_a3a278859c42f7 46-48,52,54-58,60,68-72,74,78-82,84,90-92,96,98-101,103
+  s_456cc595e56d55::t_f9cf7c623a7ada 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "b5d7f4e0b31816985a1f4b616bdc4b29150deff9",
+  "prompts": {},
+  "sessions": {
+    "s_456cc595e56d55": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_08189ea95ffepKdld8Ogt1dtBT",
+        "model": "unknown"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    }
+  }
+}
