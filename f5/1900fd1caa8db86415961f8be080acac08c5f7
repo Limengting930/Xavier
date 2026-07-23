@@ -1,0 +1,94 @@
+backend/app/schemas.py
+  s_f96e1e4cf15a05::t_28c0167c3e8ffd 23-30
+src/App.tsx
+  s_f96e1e4cf15a05::t_215e92e93f6bc5 3,79-103,368-375
+backend/app/models.py
+  s_f96e1e4cf15a05::t_63308cf452ef3f 20-21
+src/types.ts
+  s_f96e1e4cf15a05::t_53b5afd65ffec1 74-75
+backend/app/main.py
+  s_75ed5bfdf8635e::t_6ab655c0fcfedb 13,25-29
+  s_d1f2a6e3439eca::t_347e1b64cdfcbb 50-55
+src/styles/me.css
+  s_f96e1e4cf15a05::t_6a247d09bed013 38-63,95,100-129,136-178
+src/components/MePage.tsx
+  s_7490145403870b::t_bbc99649bcd9b2 452,462
+  s_f96e1e4cf15a05::t_f589d8df4f3e76 1,16,21-67,71-74,103,107-156,265-276,280-287,289-293,295-296,299,439-451,453-461,463-467,469-492
+  s_5500e5b5a6a7e5::t_067f971f42fa13 294
+  s_c00dfe11f895d1::t_ef01059e583316 297
+  s_f96e1e4cf15a05::t_510f57b1734737 468
+src/components/LoginPage.tsx
+  s_3219cc7c16c31a::t_97eaa6e645ff12 4,12-152,205-210,212-217,219-220,222-238,240-260,262-268,270-274
+  s_3219cc7c16c31a::t_e1a27b21d786c8 221
+backend/app/routers/auth.py
+  s_f96e1e4cf15a05::t_05502eafe0f31f 20,97-100,106-135
+src/api.ts
+  s_f96e1e4cf15a05::t_0a33c8c6143c8b 63,75,82-94,99-107,109,113
+src/styles/login.css
+  s_3219cc7c16c31a::t_1375e45f557635 2,6,8,10,13,15,17-21,26-34,37-42,45-47,49-53,55-70,72,74-82,84-89,91-94,96,100-102,104,108-119,122-126,129-130,133-134,139,141-142,144-145,147-150,152,154-180
+  s_3219cc7c16c31a::t_a849b4bf3e2363 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "f51900fd1caa8db86415961f8be080acac08c5f7",
+  "prompts": {},
+  "sessions": {
+    "s_3219cc7c16c31a": {
+      "agent_id": {
+        "tool": "codewiz",
+        "id": "6c06de31-8f59-4774-81b1-44bc45564d97",
+        "model": "claude-4.8-opus-google"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    },
+    "s_5500e5b5a6a7e5": {
+      "agent_id": {
+        "tool": "codewiz",
+        "id": "23935a71-e46c-4bd4-9ced-4e4b02ece77f",
+        "model": "claude-4.8-opus-google"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    },
+    "s_7490145403870b": {
+      "agent_id": {
+        "tool": "codewiz",
+        "id": "560c9409-2158-45e0-99fc-961f10a8708d",
+        "model": "claude-4.8-opus-google"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    },
+    "s_75ed5bfdf8635e": {
+      "agent_id": {
+        "tool": "codewiz",
+        "id": "433a2147-d048-4f84-835b-3cb94d6b24d8",
+        "model": "claude-4.8-opus-google"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    },
+    "s_c00dfe11f895d1": {
+      "agent_id": {
+        "tool": "codewiz",
+        "id": "7a2bba82-44f9-49b6-94df-e75abaa4c950",
+        "model": "claude-4.8-opus-google"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    },
+    "s_d1f2a6e3439eca": {
+      "agent_id": {
+        "tool": "codewiz",
+        "id": "5e63aff3-85b6-4e02-9b53-da8dc95c78b0",
+        "model": "claude-4.8-opus-google"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    },
+    "s_f96e1e4cf15a05": {
+      "agent_id": {
+        "tool": "codewiz",
+        "id": "6447dc73-f647-49d9-91bb-1426839646ae",
+        "model": "claude-4.8-opus-google"
+      },
+      "human_author": "limengting4 <limengting4@xiaohongshu.com>"
+    }
+  }
+}
