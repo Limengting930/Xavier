@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppProvider, useApp, todayLocal, isDueByLocalDate } from './store'
-import { getMe, loadQuestions, loadFromCloud } from './api'
+import { getMe, loadQuestions, loadFromCloud, updateProfile, logout } from './api'
 import type { UserInfo } from './types'
 import type { Question } from './types'
 import { BUILTIN_DECK_ID, BUILTIN_DECK_NAME } from './types'
@@ -75,6 +75,31 @@ function AppInner() {
     dispatch({ type: 'SET_USER', user })
     await loadUserData()
   }, [dispatch, loadUserData])
+
+  // 更新用户资料（昵称 / 头像 / 个性签名）：先乐观更新即时反馈，再持久化到后端
+  const handleUpdateProfile = useCallback(async (patch: { nickname?: string; avatar?: string; slogan?: string }) => {
+    const cur = state.user
+    if (!cur) return
+    const optimistic: UserInfo = {
+      ...cur,
+      ...(patch.nickname !== undefined ? { nameCn: patch.nickname, redName: patch.nickname } : {}),
+      ...(patch.avatar !== undefined ? { avatar: patch.avatar } : {}),
+      ...(patch.slogan !== undefined ? { slogan: patch.slogan } : {}),
+    }
+    dispatch({ type: 'SET_USER', user: optimistic })
+    try {
+      const updated = await updateProfile(patch)
+      dispatch({ type: 'SET_USER', user: updated })
+    } catch (e) {
+      console.warn('更新资料失败', e)
+    }
+  }, [state.user, dispatch])
+
+  // 退出登录：清 token + 清空用户态（App 自动回到登录页）
+  const handleLogout = useCallback(() => {
+    logout()
+    dispatch({ type: 'SET_USER', user: null })
+  }, [dispatch])
 
   // Auth flow：检查已存的 JWT，有效则恢复登录态并加载数据；否则显示登录页
   useEffect(() => {
@@ -340,7 +365,14 @@ function AppInner() {
       )}
       {page === 'stats' && <StatsPage />}
 
-      {page === 'me' && <MePage user={state.user} goal={goal} />}
+      {page === 'me' && (
+        <MePage
+          user={state.user}
+          goal={goal}
+          onUpdateProfile={handleUpdateProfile}
+          onLogout={handleLogout}
+        />
+      )}
       {/* 同步状态浮标（右上角小字） */}
       {state.syncStatus && (
         <div className="sync-badge">{state.syncStatus}</div>

@@ -20,6 +20,14 @@ class UserOut(BaseModel):
     phone: str
     nickname: str | None = None
     avatar: str | None = None
+    slogan: str | None = None
+
+
+class UpdateProfileReq(BaseModel):
+    """更新用户资料：三项均可选，仅传的字段被更新（None = 不改）。"""
+    nickname: str | None = Field(default=None, max_length=20, description="昵称")
+    avatar: str | None = Field(default=None, description="头像 URL 或 base64 dataURL")
+    slogan: str | None = Field(default=None, max_length=50, description="个性签名")
 
 
 class LoginResp(BaseModel):

@@ -31,9 +31,35 @@
 .me-profile {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
   margin-bottom: 16px;
   padding: 0 4px;
+}
+.me-avatar-btn {
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.me-avatar-btn:active { transform: scale(0.97); }
+.me-avatar-cam {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-btn);
+}
+.me-avatar-err {
+  font-size: 12px;
+  color: var(--pink, #F0A5B0);
+  margin-top: 6px;
 }
 .me-avatar-wrap {
   width: 80px;
@@ -63,21 +89,93 @@
 .me-name-row {
   display: flex;
   align-items: center;
-  gap: 8px;
   margin-bottom: 6px;
 }
 .me-name {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--text);
   letter-spacing: 0.5px;
 }
+.me-name-edit {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: var(--bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+.me-name-edit:active { transform: scale(0.92); }
+.me-logout {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line, #EDEAF2);
+  background: #FFFFFF;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.me-logout:active { transform: scale(0.95); }
 .me-slogan {
   font-size: 13px;
   color: var(--sub);
   font-weight: 500;
   display: flex;
   align-items: center;
+  cursor: pointer;
+  max-width: 100%;
+}
+.me-slogan-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── 资料编辑弹窗（复用 goal-dialog 外壳）内的输入控件 ─── */
+.me-edit-input,
+.me-edit-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line, #EDEAF2);
+  border-radius: 14px;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  font-family: inherit;
+  transition: border-color .2s ease;
+}
+.me-edit-input:focus,
+.me-edit-textarea:focus {
+  border-color: var(--accent);
+  background: #FFFFFF;
+}
+.me-edit-textarea {
+  min-height: 88px;
+  resize: none;
+  line-height: 1.5;
+}
+.me-edit-count {
+  margin-top: 6px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--sub);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ─── Latest Achievement Card ─── */

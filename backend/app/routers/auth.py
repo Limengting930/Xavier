@@ -17,7 +17,7 @@ from app.config import settings
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import OtpCode, User
-from app.schemas import LoginReq, LoginResp, OkResp, SendOtpReq, UserOut
+from app.schemas import LoginReq, LoginResp, OkResp, SendOtpReq, UpdateProfileReq, UserOut
 from app.sms import send_otp_sms
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -94,10 +94,42 @@ async def login(body: LoginReq, db: AsyncSession = Depends(get_db)):
     token = create_token(user.id)
     return LoginResp(
         token=token,
-        user=UserOut(id=user.id, phone=user.phone, nickname=user.nickname, avatar=user.avatar),
+        user=UserOut(
+            id=user.id, phone=user.phone, nickname=user.nickname,
+            avatar=user.avatar, slogan=user.slogan,
+        ),
     )
 
 
 @router.get("/me", response_model=UserOut)
 async def me(current: User = Depends(get_current_user)):
-    return UserOut(id=current.id, phone=current.phone, nickname=current.nickname, avatar=current.avatar)
+    return UserOut(
+        id=current.id, phone=current.phone, nickname=current.nickname,
+        avatar=current.avatar, slogan=current.slogan,
+    )
+
+
+@router.patch("/profile", response_model=UserOut)
+async def update_profile(
+    body: UpdateProfileReq,
+    current: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """更新当前登录用户的资料：昵称 / 头像 / 个性签名。仅更新传入的字段。"""
+    if body.nickname is not None:
+        nickname = body.nickname.strip()
+        if not nickname:
+            raise HTTPException(status_code=400, detail="昵称不能为空")
+        current.nickname = nickname
+    if body.avatar is not None:
+        # 空字符串视为清除头像
+        current.avatar = body.avatar or None
+    if body.slogan is not None:
+        current.slogan = body.slogan.strip() or None
+
+    await db.commit()
+    await db.refresh(current)
+    return UserOut(
+        id=current.id, phone=current.phone, nickname=current.nickname,
+        avatar=current.avatar, slogan=current.slogan,
+    )

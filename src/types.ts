@@ -71,6 +71,8 @@ export interface UserInfo {
   redName?: string
   avatar?: string
   thumbAvatar?: string
+  /** 个性签名 */
+  slogan?: string
 }
 
 export type PageType = 'home' | 'library' | 'stats' | 'learn'

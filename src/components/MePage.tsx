@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement } from 'react'
+import { useMemo, useRef, useState, type ChangeEvent, type ReactElement } from 'react'
 import { useApp, getAchievementProgress } from '../store'
 import { type UserInfo } from '../types'
 import {
@@ -13,13 +13,65 @@ import {
   IconCheckCircle,
   IconChevronLeft,
   IconChevronRight,
+  IconPencil,
   Sparkle,
 } from './icons'
 import AvatarImage from './home/AvatarImage'
 
+// 退出登录 / 相机 图标（内联，避免改动体积很大的 icons.tsx）
+function IconLogout({ size = 14, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M15 4h2.5A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 20H15" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 8l-4 4 4 4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 12h9" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+function IconCamera({ size = 13, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2l1.2-2h6.6L15.5 7h4A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5v-9z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx="12" cy="13" r="3.2" stroke={color} strokeWidth="1.8" />
+    </svg>
+  )
+}
+
+// 读取图片文件并压缩为 256×256 的 jpeg dataURL（cover 居中裁剪），避免头像 base64 过大
+function readAndCompressAvatar(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('读取文件失败'))
+    reader.onload = () => {
+      const img = new Image()
+      img.onerror = () => reject(new Error('图片解析失败'))
+      img.onload = () => {
+        const S = 256
+        const canvas = document.createElement('canvas')
+        canvas.width = S
+        canvas.height = S
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { reject(new Error('canvas 不可用')); return }
+        // cover：按较大比例缩放后居中裁剪，保证正方形头像不变形
+        const scale = Math.max(S / img.width, S / img.height)
+        const w = img.width * scale
+        const h = img.height * scale
+        ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.src = reader.result as string
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
 interface Props {
   user: UserInfo | null
   goal: number  // 当前今日新题目标，用于计算 first 成就进度
+  /** 更新用户资料（昵称 / 头像 / 个性签名），仅传入的字段被更新 */
+  onUpdateProfile: (patch: { nickname?: string; avatar?: string; slogan?: string }) => void
+  /** 退出登录 */
+  onLogout: () => void
 }
 
 // 展示层配置：id 必须与 types.ts 的 ACHIEVEMENTS + store.tsx checkAchievements 一致
@@ -48,9 +100,59 @@ function fmtDate(ts: number): string {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
 }
 
-export default function MePage({ user, goal }: Props) {
+export default function MePage({ user, goal, onUpdateProfile, onLogout }: Props) {
   const { state, allCards } = useApp()
   const { store } = state
+
+  // ── 资料编辑：改名 / 改签名弹窗 ──
+  const [editKind, setEditKind] = useState<null | 'name' | 'slogan'>(null)
+  const [editValue, setEditValue] = useState('')
+  const [editErr, setEditErr] = useState('')
+  // 退出登录确认弹窗
+  const [logoutConfirm, setLogoutConfirm] = useState(false)
+  // 头像上传
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [avatarErr, setAvatarErr] = useState('')
+
+  const displayName = user?.redName || user?.nameCn || user?.nameEn || '同学'
+  const hasCustomSlogan = !!user?.slogan?.trim()
+
+  const openNameEdit = () => {
+    setEditValue(displayName === '同学' ? '' : displayName)
+    setEditErr('')
+    setEditKind('name')
+  }
+  const openSloganEdit = () => {
+    setEditValue(user?.slogan?.trim() || '')
+    setEditErr('')
+    setEditKind('slogan')
+  }
+  const closeEdit = () => { setEditKind(null); setEditErr('') }
+  const submitEdit = () => {
+    if (editKind === 'name') {
+      const v = editValue.trim()
+      if (!v) { setEditErr('名称不能为空'); return }
+      onUpdateProfile({ nickname: v })
+    } else if (editKind === 'slogan') {
+      onUpdateProfile({ slogan: editValue.trim() })
+    }
+    closeEdit()
+  }
+
+  const handlePickAvatar = () => { setAvatarErr(''); fileRef.current?.click() }
+  const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // 清空以允许重复选择同一文件
+    if (!file) return
+    if (!file.type.startsWith('image/')) { setAvatarErr('请选择图片文件'); return }
+    if (file.size > 10 * 1024 * 1024) { setAvatarErr('图片不能超过 10MB'); return }
+    try {
+      const dataUrl = await readAndCompressAvatar(file)
+      onUpdateProfile({ avatar: dataUrl })
+    } catch {
+      setAvatarErr('头像处理失败，请换一张试试')
+    }
+  }
 
   // 当前题库 id 集合（含 custom），供 getAchievementProgress 用
   const libIds = useMemo(() => new Set(allCards().map(c => c.id)), [state.questions, state.store.custom, allCards])
@@ -160,16 +262,41 @@ export default function MePage({ user, goal }: Props) {
 
       {/* Profile Section */}
       <section className="me-profile">
-        <div className="me-avatar-wrap">
-          <AvatarImage size={80} userAvatar={user?.thumbAvatar || user?.avatar || undefined} />
+        <div className="me-avatar-btn" onClick={handlePickAvatar} role="button" aria-label="更换头像">
+          <div className="me-avatar-wrap">
+            <AvatarImage size={80} userAvatar={user?.thumbAvatar || user?.avatar || undefined} />
+          </div>
+          <div className="me-avatar-cam"><IconCamera size={13} color="#FFFFFF" /></div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleAvatarChange}
+          />
         </div>
         <div className="me-profile-info">
           <div className="me-name-row">
-            <div className="me-name">{user?.redName || user?.nameCn || user?.nameEn || '同学'}</div>
+            <div className="me-name">{displayName}</div>
+            <button className="me-name-edit" onClick={openNameEdit} aria-label="修改名称">
+              <IconPencil size={15} color="var(--sub)" />
+            </button>
+            <button className="me-logout" onClick={() => setLogoutConfirm(true)}>
+              <IconLogout size={13} color="var(--sub)" />
+              <span>退出登录</span>
+            </button>
           </div>
-          <div className="me-slogan">
-            每天进步一点点，未来可期 <IconSprout size={14} color="#7BB077" style={{ verticalAlign: 'middle', marginLeft: 2 }} />
+          <div className="me-slogan" onClick={openSloganEdit} role="button" aria-label="修改个性签名">
+            {hasCustomSlogan ? (
+              <span className="me-slogan-text">{user!.slogan}</span>
+            ) : (
+              <span className="me-slogan-text">
+                每天进步一点点，未来可期
+              </span>
+            )}
+            <IconPencil size={12} color="var(--sub)" style={{ marginLeft: 3, flexShrink: 0 }} />
           </div>
+          {avatarErr && <div className="me-avatar-err">{avatarErr}</div>}
         </div>
       </section>
 
@@ -305,6 +432,60 @@ export default function MePage({ user, goal }: Props) {
                   </div>
                 )
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 改名 / 改签名 弹窗 */}
+      {editKind && (
+        <div className="goal-overlay" onClick={closeEdit}>
+          <div className="goal-dialog" onClick={e => e.stopPropagation()} style={{ paddingBottom: 24 }}>
+            <div className="goal-title">{editKind === 'name' ? '修改名称' : '修改个性签名'}</div>
+            <div className="goal-subtitle">
+              {editKind === 'name' ? '给自己起个响亮的名字吧' : '写一句激励自己的话'}
+            </div>
+            {editKind === 'name' ? (
+              <input
+                className="me-edit-input"
+                value={editValue}
+                maxLength={10}
+                autoFocus
+                placeholder="请输入名称"
+                onChange={e => { setEditValue(e.target.value); setEditErr('') }}
+                onKeyDown={e => { if (e.key === 'Enter') submitEdit() }}
+              />
+            ) : (
+              <textarea
+                className="me-edit-textarea"
+                value={editValue}
+                maxLength={20}
+                autoFocus
+                placeholder="请输入个性签名"
+                onChange={e => { setEditValue(e.target.value); setEditErr('') }}
+              />
+            )}
+            <div className="me-edit-count">{editValue.length}/{editKind === 'name' ? 10 : 20}</div>
+            {editErr && <div className="goal-err-tip">{editErr}</div>}
+            <div className="goal-btns">
+              <button className="goal-btn secondary" onClick={closeEdit}>取消</button>
+              <button className="goal-btn primary" onClick={submitEdit}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 退出登录确认 */}
+      {logoutConfirm && (
+        <div className="goal-overlay" onClick={() => setLogoutConfirm(false)}>
+          <div className="goal-dialog" onClick={e => e.stopPropagation()} style={{ paddingBottom: 32 }}>
+            <div className="goal-title">退出登录</div>
+            <div style={{ textAlign: 'center', fontSize: 14, color: 'var(--sub)', margin: '10px 0 24px' }}>
+              确定要退出当前账号吗？
+            </div>
+            <div className="goal-btns">
+              <button className="goal-btn secondary" onClick={() => setLogoutConfirm(false)}>取消</button>
+              <button className="goal-btn primary" onClick={() => { setLogoutConfirm(false); onLogout() }}>退出</button>
             </div>
           </div>
         </div>

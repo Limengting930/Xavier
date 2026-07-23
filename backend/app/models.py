@@ -17,7 +17,8 @@ class User(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     phone: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
     nickname: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    avatar: Mapped[str | None] = mapped_column(Text, nullable=True)
+    avatar: Mapped[str | None] = mapped_column(Text, nullable=True)  # 头像：URL 或 base64 dataURL
+    slogan: Mapped[str | None] = mapped_column(String(100), nullable=True)  # 个性签名
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

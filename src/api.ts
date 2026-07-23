@@ -60,7 +60,7 @@ export async function sendOtp(phone: string): Promise<void> {
 
 /** 验证码登录/注册，成功存 token 并返回用户信息 */
 export async function login(phone: string, code: string): Promise<UserInfo> {
-  const data = await request<{ token: string; user: { id: number; phone: string; nickname?: string; avatar?: string } }>(
+  const data = await request<{ token: string; user: BackendUser }>(
     '/auth/login',
     { method: 'POST', auth: false, body: JSON.stringify({ phone, code }) },
   )
@@ -72,22 +72,45 @@ export async function login(phone: string, code: string): Promise<UserInfo> {
 export async function getMe(): Promise<UserInfo | null> {
   if (!getToken()) return null
   try {
-    const u = await request<{ id: number; phone: string; nickname?: string; avatar?: string }>('/auth/me', { method: 'GET' })
+    const u = await request<BackendUser>('/auth/me', { method: 'GET' })
     return mapUser(u)
   } catch {
     return null
   }
 }
 
+/** 更新当前用户资料（昵称 / 头像 / 个性签名），仅传的字段被更新，返回最新用户信息 */
+export async function updateProfile(patch: {
+  nickname?: string
+  avatar?: string
+  slogan?: string
+}): Promise<UserInfo> {
+  const u = await request<BackendUser>('/auth/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+  return mapUser(u)
+}
+
 export function logout() {
   clearToken()
 }
 
+// 后端 user 返回结构
+interface BackendUser {
+  id?: number
+  phone: string
+  nickname?: string
+  avatar?: string
+  slogan?: string
+}
+
 // 后端用户字段 → 前端 UserInfo 映射
-function mapUser(u: { phone: string; nickname?: string; avatar?: string }): UserInfo {
+function mapUser(u: BackendUser): UserInfo {
   return {
     nameCn: u.nickname || `用户${u.phone.slice(-4)}`,
     avatar: u.avatar || undefined,
+    slogan: u.slogan || undefined,
   }
 }
 
